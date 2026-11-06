@@ -1,16 +1,3237 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Đang chuyển hướng...</title>
-  <meta http-equiv="refresh" content="0; url="https://sites.google.com/pmktfast.com/canhbaobaoduongtb/full-page-embed">
+  <title>Demo cảnh báo BD cấp giờ - QNP KT01</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    window.location.replace("https://sites.google.com/pmktfast.com/canhbaobaoduongtb/full-page-embed");
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 500: '#0284c7', 600: '#0369a1', 700: '#075985' },
+            port: { dark: '#080d1a', panel: '#0f172a', card: '#1e293b', border: '#334155' }
+          }
+        }
+      }
+    }
   </script>
+  <!-- Three.js r128 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-main: #080d1a;
+      --card-bg: rgba(15, 23, 42, 0.92);
+      --border-color: rgba(51, 65, 85, 0.7);
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-main);
+      color: #f1f5f9;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+    #canvas-container {
+      position: relative;
+      width: 100%;
+      height: 48vh;
+      min-height: 360px;
+      overflow: hidden;
+    }
+    @media (min-width: 1024px) {
+      #canvas-container {
+        height: 56vh;
+      }
+    }
+    .badge-glow-red {
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.75);
+    }
+    .badge-glow-yellow {
+      box-shadow: 0 0 15px rgba(234, 179, 8, 0.65);
+    }
+    .badge-glow-green {
+      box-shadow: 0 0 15px rgba(34, 197, 94, 0.75);
+    }
+    .timeline-range::-webkit-slider-thumb {
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 3px solid #ffffff;
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.9);
+      transition: transform 0.1s ease;
+    }
+    .timeline-range::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+    }
+    /* Modal Backdrop */
+    .modal-overlay {
+      background-color: rgba(4, 7, 15, 0.85);
+      backdrop-filter: blur(8px);
+    }
+  </style>
 </head>
-<body style="font-family: sans-serif; text-align: center; padding-top: 50px;">
-  <p>Đang chuyển hướng đến trang web...</p>
-  <p>Nếu trang không tự tải, <a href="">nhấn vào đây</a>.</p>
+<body class="flex flex-col min-h-screen text-slate-100 selection:bg-sky-500 selection:text-white">
+
+  <!-- TOP HEADER (CHUẨN HÓA THEO QUY TRÌNH KT01 - CẢNG QUY NHƠN) -->
+  <header class="bg-port-panel/95 backdrop-blur border-b border-port-border px-4 py-2.5 sticky top-0 z-40 flex flex-wrap items-center justify-between gap-3 shadow-md">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 via-indigo-600 to-amber-500 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-sky-600/30">
+        ⚓
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="font-bold text-sm sm:text-base text-white tracking-wide">CẢNH BÁO BẢO DƯỠNG CẤP GIỜ PTTB</h1>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-950 text-sky-400 border border-sky-700 font-mono">QNP KT01 - SOP</span>
+        </div>
+        <p class="text-xs text-slate-400 hidden sm:block">Mô phỏng 3D chu kỳ thiết bị cảng • Cơ chế hỏi - duyệt bảo dưỡng tương tác</p>
+      </div>
+    </div>
+
+    <!-- Right status badge & quick action -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      <!-- Auto prompt toggle status -->
+      <label class="flex items-center gap-2 cursor-pointer bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700 text-xs">
+        <input type="checkbox" id="chk-auto-prompt" checked class="w-4 h-4 rounded text-sky-600 focus:ring-0 accent-sky-500">
+        <span class="text-slate-300 font-medium hidden md:inline">Tự dừng & hỏi khi đến hạn</span>
+        <span class="text-slate-300 font-medium md:hidden">Dừng hỏi</span>
+      </label>
+
+      <!-- Unit test badge -->
+      <button id="btn-toggle-tests" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-600/60 shadow-sm hover:bg-emerald-900/60 transition" title="Xem bảng kiểm thử tự động Mục D">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="test-summary-badge">KIỂM THỬ: ĐANG CHẠY...</span>
+      </button>
+
+      <button id="btn-reset-view" class="px-2.5 py-1 text-xs rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition" title="Đặt lại góc camera">
+        📐 Góc nhìn
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN WRAPPER -->
+  <main class="flex-1 flex flex-col w-full">
+
+    <!-- 3D VIEWPORT CONTAINER -->
+    <div id="canvas-container" class="w-full bg-slate-950 select-none">
+      <!-- Top Overlay HUD inside 3D Canvas -->
+      <div class="absolute top-3 left-3 right-3 pointer-events-none flex flex-wrap items-start justify-between gap-2 z-10">
+        <!-- Machine info card -->
+        <div class="bg-port-panel/90 backdrop-blur-md border border-port-border rounded-xl px-3.5 py-2.5 shadow-xl max-w-xs pointer-events-auto">
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <span id="hud-tb-code" class="text-xs font-bold font-mono text-sky-400 bg-sky-950 px-1.5 py-0.5 rounded border border-sky-800">TB0012</span>
+            <span id="hud-tb-status" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800">Đang hoạt động</span>
+          </div>
+          <div id="hud-tb-name" class="font-bold text-sm text-slate-100 truncate">Cẩu bánh lốp KATO 25T</div>
+          <div class="flex items-center gap-2 mt-1.5 text-xs text-slate-400">
+            <span>Ngày: <strong id="hud-date" class="text-white font-mono">31/10/2026</strong></span>
+            <span>•</span>
+            <span>Lũy kế H: <strong id="hud-total-hours" class="text-amber-400 font-mono">820,0 h</strong></span>
+          </div>
+        </div>
+
+        <!-- 3D Cabin LED Signboard -->
+        <div class="bg-port-panel/90 backdrop-blur-md border border-amber-500/40 rounded-xl px-4 py-2 shadow-xl shadow-amber-500/10 pointer-events-auto flex items-center gap-3">
+          <div class="w-3 h-3 rounded-full bg-amber-400 animate-ping"></div>
+          <div>
+            <div class="text-[10px] uppercase font-bold text-amber-400/90 tracking-wider">Đồng hồ LED Ca-bin</div>
+            <div id="hud-led-text" class="text-sm sm:text-base font-bold font-mono text-amber-300 drop-shadow">H = 820,0 h | Còn 80 h → Cấp 900</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls Hint -->
+      <div class="absolute bottom-3 left-3 text-[11px] text-slate-400 bg-slate-900/80 backdrop-blur px-2.5 py-1 rounded-lg border border-slate-800 pointer-events-none hidden sm:block">
+        🖱️ Xoay 3D: Kéo chuột trái | Di chuyển: Kéo chuột phải | Thu phóng: Lăn chuột / Cảm ứng chụm
+      </div>
+
+      <!-- Quick Camera view buttons -->
+      <div class="absolute bottom-3 right-3 flex items-center gap-1.5 z-10">
+        <button id="cam-view-iso" class="px-2 py-1 text-[11px] font-medium bg-slate-900/85 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-md backdrop-blur">Toàn cảnh</button>
+        <button id="cam-view-cabin" class="px-2 py-1 text-[11px] font-medium bg-slate-900/85 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-md backdrop-blur">Ca-bin</button>
+        <button id="cam-view-ring" class="px-2 py-1 text-[11px] font-medium bg-slate-900/85 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-md backdrop-blur">Vòng chu kỳ</button>
+      </div>
+
+      <!-- Toast Container -->
+      <div id="toast-container" class="absolute top-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none z-30 w-11/12 max-w-md"></div>
+    </div>
+
+    <!-- TIMELINE & PLAYBACK CONTROL BAR -->
+    <div class="bg-port-panel border-y border-port-border px-4 py-3 shadow-lg flex flex-col gap-2.5 z-20">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <!-- Play / Pause / Step Controls -->
+        <div class="flex items-center gap-2">
+          <button id="btn-restart-demo" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-indigo-600/30 transition" title="Đặt lại dữ liệu kịch bản sạch và tự động phát lại từ đầu">
+            <span>🔄</span>
+            <span class="hidden sm:inline">Chạy lại từ đầu</span>
+          </button>
+          <button id="btn-rewind" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition" title="Về ngày đầu tiên">
+            ⏮️
+          </button>
+          <button id="btn-step-prev" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition" title="Lùi 1 ngày">
+            ◀️
+          </button>
+          <button id="btn-play-pause" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-sky-600/30 transition">
+            <span id="play-icon">⏸️</span>
+            <span id="play-text">Tạm dừng</span>
+          </button>
+          <button id="btn-step-next" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition" title="Tiến 1 ngày">
+            ▶️
+          </button>
+
+          <!-- Speed selector -->
+          <div class="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700 text-xs font-semibold">
+            <button class="speed-btn px-2 py-1 rounded text-slate-400 hover:text-white" data-speed="1">1×</button>
+            <button class="speed-btn px-2 py-1 rounded bg-sky-600 text-white shadow-sm" data-speed="3">3×</button>
+            <button class="speed-btn px-2 py-1 rounded text-slate-400 hover:text-white" data-speed="10">10×</button>
+          </div>
+        </div>
+
+        <!-- Date display indicator -->
+        <div class="flex items-center gap-3">
+          <div class="text-right">
+            <div class="text-[11px] text-slate-400 font-medium">Ngày đang xem (X)</div>
+            <div id="timeline-current-date" class="text-base sm:text-lg font-bold font-mono text-sky-400">31/10/2026</div>
+          </div>
+          <div class="text-right pl-3 border-l border-slate-700">
+            <div class="text-[11px] text-slate-400 font-medium">Giờ hoạt động H(X)</div>
+            <div id="timeline-current-hours" class="text-base sm:text-lg font-bold font-mono text-amber-400">820,0 h</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrubber Slider -->
+      <div class="relative w-full pt-1 pb-1">
+        <input id="timeline-slider" type="range" min="0" max="60" value="0" step="1" class="timeline-range w-full h-2.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500">
+        <div id="timeline-markers" class="w-full relative h-4 mt-1 text-[10px] text-slate-400 font-mono"></div>
+      </div>
+    </div>
+
+    <!-- QUICK ACTIONS & PRESETS ROW -->
+    <div class="bg-port-dark/80 border-b border-port-border px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-slate-400 font-semibold">Kịch bản:</span>
+        <select id="scenario-selector" class="bg-slate-800 text-white text-xs font-medium rounded-lg px-2.5 py-1.5 border border-slate-700 focus:outline-none focus:border-sky-500">
+          <option value="ZERO" selected>🌟 Bắt đầu từ 0h: Khởi động máy mới (0h → 300h → 600h → 1200h)</option>
+          <option value="TC1">TC1: Nghiệp vụ mẫu QNP (Mốc 820h, BD 900h ngày 10/11, SC lớn 18/12)</option>
+          <option value="TC2">TC2: Trượt theo giờ BD thực tế (Mốc 1200 → 1220h)</option>
+          <option value="TC3">TC3: Bỏ qua 900, làm 1200 ngày 09/12 (Bao trùm đóng 900)</option>
+          <option value="TC4">TC4: BD 900 sớm ngày 03/11 (chưa đến hạn)</option>
+          <option value="TC5">TC5: Phiếu sai cấp 300 ngày 05/11 (Log BD_NGOAI)</option>
+          <option value="TC6">TC6: Không có phiếu phát sinh (đến 15/11 - quá hạn)</option>
+        </select>
+
+        <button id="btn-open-interactive-ticket" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-1.5 shadow-sm">
+          <span>📝</span> <span>Lập Phiếu BD ngay</span>
+        </button>
+        <button id="btn-quick-add-sc" class="px-2.5 py-1.5 rounded-lg bg-rose-900/70 hover:bg-rose-800 text-rose-200 border border-rose-700 font-medium">
+          + Thêm SC lớn (Reset)
+        </button>
+        <button id="btn-quick-show-diagram" class="px-2.5 py-1.5 rounded-lg bg-indigo-900/70 hover:bg-indigo-800 text-indigo-200 border border-indigo-700 font-medium flex items-center gap-1">
+          <span>📐</span> <span>Sơ đồ Quy tắc</span>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span id="param-mode-badge" class="px-2 py-0.5 rounded bg-sky-950 text-sky-400 border border-sky-800 font-mono text-[11px]">Mốc: Cố định</span>
+        <span id="wrap-mode-badge" class="px-2 py-0.5 rounded bg-indigo-950 text-indigo-400 border border-indigo-800 font-mono text-[11px]">Bao trùm: BẬT</span>
+      </div>
+    </div>
+
+    <!-- DATA PANELS / TABS SECTION -->
+    <div class="px-4 py-4 flex flex-col gap-4">
+
+      <!-- Navigation Tabs -->
+      <div class="flex items-center gap-2 border-b border-port-border pb-2 overflow-x-auto text-xs sm:text-sm font-semibold">
+        <button class="panel-tab-btn px-3 py-1.5 rounded-lg bg-indigo-600 text-white flex items-center gap-1.5" data-target="tab-rules-diagram">
+          <span>📐</span> Sơ đồ Quy tắc Cảnh báo
+        </button>
+        <button class="panel-tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800" data-target="tab-form-params">
+          ⚙️ Cấu hình Tham số (Trực quan)
+        </button>
+        <button class="panel-tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800" data-target="tab-alerts">
+          📋 Dòng cảnh báo ngày X (<span id="count-active-alerts">0</span>)
+        </button>
+        <button class="panel-tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800" data-target="tab-all-rows">
+          📊 Toàn bộ dòng Engine (<span id="count-all-rows">0</span>)
+        </button>
+        <button class="panel-tab-btn px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800" data-target="tab-logs">
+          📜 Nhật ký & Ngoại lệ (<span id="count-logs">0</span>)
+        </button>
+        <button class="panel-tab-btn px-3 py-1.5 rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-slate-800" data-target="tab-tests">
+          🧪 Kiểm thử tự động (PASS)
+        </button>
+      </div>
+
+      <!-- TAB 0: SƠ ĐỒ MÔ TẢ QUY TẮC CẢNH BÁO BẰNG HÌNH VẼ TRỰC QUAN -->
+      <div id="tab-rules-diagram" class="tab-content block">
+        <div class="bg-port-panel border border-port-border rounded-xl p-4 sm:p-6 shadow-xl flex flex-col gap-6">
+          
+          <!-- Header Giới thiệu Sơ đồ -->
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-port-border pb-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 rounded bg-indigo-950 text-indigo-400 border border-indigo-700 text-xs font-mono font-bold">INFOGRAPHIC BẢO DƯỠNG</span>
+                <h3 class="text-base sm:text-lg font-bold text-white">SƠ ĐỒ QUY TẮC CẢNH BÁO ĐẾN HẠN BẢO DƯỠNG CẤP GIỜ</h3>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">Trực quan hóa logic phân định vùng màu cảnh báo, công thức tính mốc, cơ chế bao trùm và xử lý chứng từ theo SOP KT01 - Cảng Quy Nhơn</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-400">Thiết bị áp dụng:</span>
+              <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-slate-800 text-sky-400 border border-slate-700">PTTB Cơ giới & Xếp dỡ cảng</span>
+            </div>
+          </div>
+
+          <!-- PHẦN 1: HÌNH VẼ TRỤC THỜI GIAN & 4 TRẠNG THÁI MÀU CẢNH BÁO -->
+          <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+              <h4 class="text-sm font-bold text-sky-400 flex items-center gap-2">
+                <span>1️⃣</span> TRỤC THỜI GIAN LŨY KẾ GIỜ H(X) & CƠ CHẾ ĐỔI MÀU CẢNH BÁO
+              </h4>
+              <span class="text-[11px] text-slate-400 font-mono">Quy tắc B8 (Fast FBO)</span>
+            </div>
+
+            <!-- SVG Diagram Trục cảnh báo -->
+            <div class="w-full overflow-x-auto bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+              <svg viewBox="0 0 960 250" class="w-full min-w-[760px] text-xs font-sans select-none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="gradWhite" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#334155"/>
+                    <stop offset="100%" stop-color="#475569"/>
+                  </linearGradient>
+                  <linearGradient id="gradYellow" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#ca8a04"/>
+                    <stop offset="100%" stop-color="#eab308"/>
+                  </linearGradient>
+                  <linearGradient id="gradRed" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#dc2626"/>
+                    <stop offset="100%" stop-color="#ef4444"/>
+                  </linearGradient>
+                  <linearGradient id="gradGreen" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#16a34a"/>
+                    <stop offset="100%" stop-color="#22c55e"/>
+                  </linearGradient>
+                  <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+                    <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.5"/>
+                  </filter>
+                  <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 1 L 10 5 L 0 9 z" fill="#94a3b8" />
+                  </marker>
+                </defs>
+
+                <!-- Trục thời gian chính -->
+                <line x1="60" y1="120" x2="900" y2="120" stroke="#475569" stroke-width="4" marker-end="url(#arrow)" />
+
+                <!-- Vùng 1: Trắng (Bình thường) -->
+                <rect x="70" y="100" width="360" height="40" rx="8" fill="url(#gradWhite)" opacity="0.9" filter="url(#shadow)" />
+                <text x="250" y="125" fill="#f8fafc" font-weight="bold" font-size="13" text-anchor="middle">⚪ VÙNG TRẮNG: Hoạt động bình thường (Còn lại > 30h)</text>
+                
+                <!-- Vùng 2: Vàng (Cảnh báo trước) -->
+                <rect x="435" y="100" width="200" height="40" rx="8" fill="url(#gradYellow)" opacity="0.95" filter="url(#shadow)" />
+                <text x="535" y="125" fill="#0f172a" font-weight="bold" font-size="13" text-anchor="middle">🟡 VÙNG VÀNG (≤ 30h)</text>
+                
+                <!-- Vùng 3: Đỏ (Đến hạn / Quá hạn) -->
+                <rect x="640" y="100" width="230" height="40" rx="8" fill="url(#gradRed)" opacity="0.95" filter="url(#shadow)" />
+                <text x="755" y="125" fill="#ffffff" font-weight="bold" font-size="13" text-anchor="middle">🔴 VÙNG ĐỎ: Quá hạn (≤ 0h)</text>
+
+                <!-- Các vạch mốc và ghi chú phía trên trục -->
+                <!-- Mốc bắt đầu -->
+                <line x1="70" y1="75" x2="70" y2="165" stroke="#64748b" stroke-width="2" stroke-dasharray="4" />
+                <text x="70" y="65" fill="#94a3b8" font-size="11" font-weight="bold" text-anchor="middle">0 h (Gốc đoạn)</text>
+
+                <!-- Mốc Cảnh báo vàng (Mốc - gio_cb) -->
+                <line x1="435" y1="45" x2="435" y2="165" stroke="#eab308" stroke-width="2" stroke-dasharray="4" />
+                <rect x="365" y="25" width="140" height="26" rx="6" fill="#422006" stroke="#ca8a04" />
+                <text x="435" y="42" fill="#fef08a" font-size="11" font-weight="bold" text-anchor="middle">Mốc − 30h (gio_cb)</text>
+
+                <!-- Mốc Đến hạn chính thức -->
+                <line x1="640" y1="20" x2="640" y2="165" stroke="#ef4444" stroke-width="3" />
+                <rect x="560" y="10" width="160" height="30" rx="6" fill="#450a0a" stroke="#b91c1c" />
+                <text x="640" y="30" fill="#fca5a5" font-size="12" font-weight="bold" text-anchor="middle">MỐC ĐẾN HẠN (Mốc h)</text>
+
+                <!-- Kim chỉ giờ lũy kế hiện tại H(X) -->
+                <g transform="translate(560, 100)">
+                  <polygon points="0,-15 10,-35 -10,-35" fill="#38bdf8" />
+                  <rect x="-45" y="-62" width="90" height="24" rx="6" fill="#0369a1" stroke="#38bdf8" />
+                  <text x="0" y="-46" fill="#ffffff" font-size="11" font-weight="bold" text-anchor="middle">H(X) hiện tại</text>
+                </g>
+
+                <!-- Hướng hành động nghiệp vụ phía dưới -->
+                <!-- Thao tác vùng Vàng -->
+                <rect x="420" y="175" width="220" height="60" rx="8" fill="#1e293b" stroke="#eab308" stroke-width="1.5" />
+                <text x="530" y="195" fill="#fef08a" font-weight="bold" font-size="11" text-anchor="middle">📌 ĐVSD & PKT chuẩn bị:</text>
+                <text x="530" y="212" fill="#cbd5e1" font-size="10" text-anchor="middle">• Lập Kế hoạch BD tháng (Phụ lục 2)</text>
+                <text x="530" y="226" fill="#cbd5e1" font-size="10" text-anchor="middle">• XNSCCK lập dự toán vật tư (PL 9)</text>
+
+                <!-- Thao tác vùng Đỏ -->
+                <rect x="650" y="175" width="230" height="60" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="1.5" />
+                <text x="765" y="195" fill="#fca5a5" font-weight="bold" font-size="11" text-anchor="middle">⚠️ ĐẾN HẠN BẮT BUỘC:</text>
+                <text x="765" y="212" fill="#cbd5e1" font-size="10" text-anchor="middle">• Dừng máy, giao XNSCCK thi công</text>
+                <text x="765" y="226" fill="#cbd5e1" font-size="10" text-anchor="middle">• Lập Biên bản nghiệm thu (PL 10)</text>
+
+                <!-- Khối Nghiệm thu xanh lá -->
+                <g transform="translate(130, 175)">
+                  <rect x="0" y="0" width="260" height="60" rx="8" fill="#052e16" stroke="#22c55e" stroke-width="1.5" />
+                  <text x="130" y="20" fill="#86efac" font-weight="bold" font-size="11" text-anchor="middle">✅ ĐÃ NGHIỆM THU (XANH LÁ):</text>
+                  <text x="130" y="37" fill="#bbf7d0" font-size="10" text-anchor="middle">Đóng dòng trạng thái 1 (so_ct TH.../BB)</text>
+                  <text x="130" y="51" fill="#bbf7d0" font-size="10" text-anchor="middle">Ghi nhận giờ BD thực tế, sinh cấp kế tiếp</text>
+                </g>
+              </svg>
+            </div>
+
+            <!-- Chú thích 4 Khối trạng thái -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs mt-1">
+              <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/80 flex flex-col gap-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full bg-slate-300"></span>
+                  <span class="font-bold text-slate-200">1. VÙNG TRẮNG</span>
+                </div>
+                <div class="text-[11px] font-mono text-slate-400">Điều kiện: Còn lại > gio_cb (30h)</div>
+                <p class="text-slate-300 text-[11px] leading-relaxed">Thiết bị hoạt động an toàn theo sản xuất. ĐVSD tiếp tục theo dõi, ghi chép sổ nhật trình ca máy hàng ngày.</p>
+              </div>
+
+              <div class="bg-amber-950/40 p-3 rounded-xl border border-amber-600/50 flex flex-col gap-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full bg-amber-400 animate-pulse"></span>
+                  <span class="font-bold text-amber-300">2. VÙNG VÀNG (BÁO TRƯỚC)</span>
+                </div>
+                <div class="text-[11px] font-mono text-amber-400">Điều kiện: 0 < Còn lại ≤ 30h</div>
+                <p class="text-slate-300 text-[11px] leading-relaxed">Cảnh báo sắp đến hạn. Hệ thống tự động dừng hỏi NSD duyệt kế hoạch, phòng KT & XNSCCK chuẩn bị vật tư thay thế.</p>
+              </div>
+
+              <div class="bg-rose-950/40 p-3 rounded-xl border border-rose-600/50 flex flex-col gap-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
+                  <span class="font-bold text-rose-300">3. VÙNG ĐỎ (ĐẾN HẠN)</span>
+                </div>
+                <div class="text-[11px] font-mono text-rose-400">Điều kiện: Còn lại ≤ 0h (H ≥ Mốc)</div>
+                <p class="text-slate-300 text-[11px] leading-relaxed">Quá hạn bảo dưỡng định kỳ. Đèn tín hiệu nóc chớp đỏ liên tục. Yêu cầu bàn giao máy ngay vào Xí nghiệp sửa chữa.</p>
+              </div>
+
+              <div class="bg-emerald-950/40 p-3 rounded-xl border border-emerald-600/50 flex flex-col gap-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+                  <span class="font-bold text-emerald-300">4. ĐÃ NGHIỆM THU (XANH LÁ)</span>
+                </div>
+                <div class="text-[11px] font-mono text-emerald-400">Trạng thái: 1 (Đã BD xong)</div>
+                <p class="text-slate-300 text-[11px] leading-relaxed">Ký Biên bản nghiệm thu kỹ thuật (Phụ lục 10). Dòng đóng, trụ mốc 3D chuyển xanh lá, tự động sinh cấp bảo dưỡng tiếp theo.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- PHẦN 2: HÌNH MINH HỌA 2 CÁCH TÍNH MỐC KẾ TIẾP (CỐ ĐỊNH VS TRƯỢT) -->
+          <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+              <h4 class="text-sm font-bold text-indigo-400 flex items-center gap-2">
+                <span>2️⃣</span> SO SÁNH 2 PHƯƠNG PHÁP TÍNH MỐC BẢO DƯỠNG (CÁCH 1 VS CÁCH 2)
+              </h4>
+              <span class="text-[11px] text-slate-400 font-mono">Quy tắc B4 (Tham số cach_tinh_moc)</span>
+            </div>
+
+            <!-- SVG So sánh 2 cách tính mốc -->
+            <div class="w-full overflow-x-auto bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+              <svg viewBox="0 0 960 260" class="w-full min-w-[760px] text-xs font-sans select-none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Tiêu đề 2 nhánh -->
+                <!-- CÁCH 1 -->
+                <rect x="20" y="15" width="440" height="32" rx="6" fill="#0369a1" />
+                <text x="240" y="36" fill="#ffffff" font-weight="bold" font-size="13" text-anchor="middle">CÁCH 1: CỐ ĐỊNH THEO CHU KỲ (cach_tinh_moc = 1)</text>
+
+                <!-- Trục Cách 1 -->
+                <line x1="40" y1="90" x2="440" y2="90" stroke="#475569" stroke-width="3" marker-end="url(#arrow)" />
+                <!-- Mốc 900 cố định -->
+                <circle cx="160" cy="90" r="7" fill="#f59e0b" />
+                <text x="160" y="75" fill="#fde68a" font-weight="bold" text-anchor="middle">Mốc 900h</text>
+                
+                <!-- Thực tế làm tại 920h -->
+                <circle cx="210" cy="90" r="7" fill="#22c55e" />
+                <text x="210" y="115" fill="#86efac" font-size="11" font-weight="bold" text-anchor="middle">Làm tại 920h</text>
+                <line x1="210" y1="90" x2="210" y2="105" stroke="#22c55e" stroke-width="2" />
+
+                <!-- Mốc 1200 cố định không đổi -->
+                <circle cx="380" cy="90" r="9" fill="#ef4444" />
+                <text x="380" y="75" fill="#fca5a5" font-weight="bold" text-anchor="middle">Mốc 1200h (KHÔNG ĐỔI)</text>
+                <rect x="50" y="130" width="380" height="48" rx="6" fill="#1e293b" stroke="#38bdf8" />
+                <text x="240" y="150" fill="#7dd3fc" font-size="11" text-anchor="middle">• Mốc kế tiếp luôn cố định = (Chu kỳ − 1) × C + gio_dm</text>
+                <text x="240" y="166" fill="#cbd5e1" font-size="10" text-anchor="middle">Dù làm sớm (850h) hay trễ (920h), mốc cấp sau vẫn đúng 1.200h</text>
+
+
+                <!-- CÁCH 2 -->
+                <rect x="500" y="15" width="440" height="32" rx="6" fill="#6d28d9" />
+                <text x="720" y="36" fill="#ffffff" font-weight="bold" font-size="13" text-anchor="middle">CÁCH 2: TRƯỢT THEO GIỜ THỰC TẾ BD (cach_tinh_moc = 2)</text>
+
+                <!-- Trục Cách 2 -->
+                <line x1="520" y1="90" x2="920" y2="90" stroke="#475569" stroke-width="3" marker-end="url(#arrow)" />
+                <!-- Mốc 900 cũ -->
+                <circle cx="620" cy="90" r="6" fill="#64748b" />
+                <text x="620" y="75" fill="#94a3b8" text-anchor="middle">Mốc cũ 900h</text>
+
+                <!-- Thực tế làm trễ tại 920h -->
+                <circle cx="670" cy="90" r="7" fill="#22c55e" />
+                <text x="670" y="115" fill="#86efac" font-size="11" font-weight="bold" text-anchor="middle">Làm tại 920h (+20h)</text>
+                <line x1="670" y1="90" x2="670" y2="105" stroke="#22c55e" stroke-width="2" />
+
+                <!-- Mốc 1200 bị trượt lên 1220h -->
+                <circle cx="880" cy="90" r="9" fill="#a855f7" />
+                <text x="880" y="75" fill="#d8b4fe" font-weight="bold" text-anchor="middle">Mốc mới: 1220h (TRƯỢT)</text>
+                <!-- Mũi tên trượt -->
+                <path d="M 830 85 Q 855 70 875 85" fill="none" stroke="#a855f7" stroke-width="2" marker-end="url(#arrow)" />
+                
+                <rect x="530" y="130" width="380" height="48" rx="6" fill="#1e293b" stroke="#a855f7" />
+                <text x="720" y="150" fill="#d8b4fe" font-size="11" text-anchor="middle">• Mốc kế tiếp = Giờ lúc BD (920h) + Khoảng cách định mức (300h)</text>
+                <text x="720" y="166" fill="#cbd5e1" font-size="10" text-anchor="middle">Mốc được bảo lưu đủ định mức 300h tính từ lần nghiệm thu thực tế</text>
+              </svg>
+            </div>
+          </div>
+
+          <!-- PHẦN 3: HÌNH MINH HỌA QUY TẮC BAO TRÙM & SỬA CHỮA LỚN RESET -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <!-- Box Bao trùm (Q8) -->
+            <div class="bg-slate-900/90 border border-port-border rounded-xl p-4 flex flex-col gap-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span class="text-xs font-bold text-teal-400 uppercase flex items-center gap-1.5">
+                  <span>3️⃣</span> QUY TẮC BAO TRÙM (bao_trum = true)
+                </span>
+                <span class="text-[11px] text-slate-400 font-mono">Quy tắc B6.3</span>
+              </div>
+              
+              <svg viewBox="0 0 440 130" class="w-full text-xs font-sans select-none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="15" y="15" width="180" height="42" rx="6" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5" />
+                <text x="105" y="34" fill="#fde68a" font-weight="bold" text-anchor="middle">Cấp 900h (Đang mở - ID: 2)</text>
+                <text x="105" y="48" fill="#94a3b8" font-size="10" text-anchor="middle">Chưa làm phiếu nghiệm thu</text>
+
+                <path d="M 205 36 L 235 36" stroke="#2dd4bf" stroke-width="2" marker-end="url(#arrow)" />
+
+                <rect x="245" y="15" width="180" height="42" rx="6" fill="#042f2e" stroke="#2dd4bf" stroke-width="2" />
+                <text x="335" y="34" fill="#5eead4" font-weight="bold" text-anchor="middle">Cấp 1200h (Lập phiếu TH002)</text>
+                <text x="335" y="48" fill="#99f6e4" font-size="10" text-anchor="middle">Nghiệm thu bảo dưỡng lớn</text>
+
+                <!-- Kết quả -->
+                <rect x="15" y="75" width="410" height="42" rx="6" fill="#134e4a" stroke="#2dd4bf" />
+                <text x="220" y="93" fill="#ccfbf1" font-weight="bold" text-anchor="middle">✅ Cấp 900h TỰ ĐỘNG ĐÓNG (Trạng thái 2 - Bao trùm)</text>
+                <text x="220" y="107" fill="#99f6e4" font-size="10" text-anchor="middle">Cấp cao hơn bao quát các hạng mục cấp thấp, không phát sinh chi phí lặp lại</text>
+              </svg>
+            </div>
+
+            <!-- Box SC Lớn Reset (Q4) -->
+            <div class="bg-slate-900/90 border border-port-border rounded-xl p-4 flex flex-col gap-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span class="text-xs font-bold text-rose-400 uppercase flex items-center gap-1.5">
+                  <span>4️⃣</span> SỬA CHỮA LỚN (SC BIG - RESET CHU KỲ)
+                </span>
+                <span class="text-[11px] text-slate-400 font-mono">Quy tắc B7</span>
+              </div>
+
+              <svg viewBox="0 0 440 130" class="w-full text-xs font-sans select-none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Phiếu SC BIG -->
+                <rect x="15" y="15" width="190" height="42" rx="6" fill="#4c0519" stroke="#f43f5e" stroke-width="1.5" />
+                <text x="110" y="34" fill="#fecdd3" font-weight="bold" text-anchor="middle">PHIẾU SC LỚN (SC BIG)</text>
+                <text x="110" y="48" fill="#fda4af" font-size="10" text-anchor="middle">Đại tu toàn diện thiết bị</text>
+
+                <path d="M 215 36 L 245 36" stroke="#f43f5e" stroke-width="2" marker-end="url(#arrow)" />
+
+                <!-- Đoạn mới -->
+                <rect x="255" y="15" width="170" height="42" rx="6" fill="#0284c7" />
+                <text x="340" y="34" fill="#ffffff" font-weight="bold" text-anchor="middle">ĐOẠN MỚI: 0 h</text>
+                <text x="340" y="48" fill="#e0f2fe" font-size="10" text-anchor="middle">Chu kỳ 1 • Bắt đầu Cấp 300h</text>
+
+                <!-- Kết quả -->
+                <rect x="15" y="75" width="410" height="42" rx="6" fill="#1e293b" stroke="#f43f5e" />
+                <text x="220" y="93" fill="#fca5a5" font-weight="bold" text-anchor="middle">🔄 CÁC DÒNG CŨ CHUYỂN TRẠNG THÁI 9 (HỦY RESET)</text>
+                <text x="220" y="107" fill="#cbd5e1" font-size="10" text-anchor="middle">Thiết lập lại toàn bộ đồng hồ đo giờ về gốc, mở chu kỳ vận hành mới</text>
+              </svg>
+            </div>
+
+          </div>
+
+          <!-- PHẦN 5: BẢNG TỔNG HỢP CÁC TRẠNG THÁI DÒNG ENGINE (FAST FBO B1) -->
+          <div class="bg-slate-900/80 border border-port-border rounded-xl p-4 flex flex-col gap-2.5">
+            <h4 class="text-xs font-bold text-slate-300 uppercase font-mono flex items-center gap-2">
+              <span>📋</span> BẢNG MÃ TRẠNG THÁI DÒNG CẢNH BÁO TRONG HỆ THỐNG
+            </h4>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <div class="bg-amber-950/40 p-2.5 rounded-lg border border-amber-700/60">
+                <div class="font-bold font-mono text-amber-400">Mã 0: ĐANG MỞ</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">Dòng đang theo dõi lũy kế giờ, chưa nghiệm thu bảo dưỡng.</div>
+              </div>
+              <div class="bg-emerald-950/40 p-2.5 rounded-lg border border-emerald-700/60">
+                <div class="font-bold font-mono text-emerald-400">Mã 1: ĐÃ BẢO DƯỠNG</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">Đã hoàn thành thi công và ký Biên bản nghiệm thu kỹ thuật.</div>
+              </div>
+              <div class="bg-teal-950/40 p-2.5 rounded-lg border border-teal-700/60">
+                <div class="font-bold font-mono text-teal-400">Mã 2: ĐÓNG DO BAO TRÙM</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">Tự động đóng do làm cấp bảo dưỡng lớn hơn cùng chu kỳ.</div>
+              </div>
+              <div class="bg-rose-950/40 p-2.5 rounded-lg border border-rose-700/60">
+                <div class="font-bold font-mono text-rose-400">Mã 9: HỦY DO RESET</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">Đóng hủy do phát sinh phiếu Sửa chữa lớn (SC BIG) đại tu máy.</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- TAB 1: FORM CẤU HÌNH THAM SỐ TRỰC QUAN (KHÔNG DÙNG JSON) -->
+      <div id="tab-form-params" class="tab-content hidden">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-port-border pb-3">
+            <div>
+              <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                <span>🛠️</span> CẤU HÌNH THAM SỐ ĐẦU VÀO TRỰC QUAN (SOP KT01 - CẢNG QUY NHƠN)
+              </h3>
+              <p class="text-xs text-slate-400">Tùy chỉnh thông số phương tiện thiết bị, phương pháp tính mốc, và định mức cấp giờ không cần mã code</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btn-form-restore-default" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold">
+                Khôi phục chuẩn
+              </button>
+              <button id="btn-form-apply" class="px-4 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold shadow-lg shadow-sky-600/30 flex items-center gap-1.5">
+                <span>💾</span> Áp dụng & Tính lại
+              </button>
+            </div>
+          </div>
+
+          <!-- Form Grid 3 columns -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <!-- Box 1: Thông tin Thiết bị Cảng Quy Nhơn -->
+            <div class="bg-slate-900/80 border border-port-border rounded-xl p-3.5 flex flex-col gap-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span class="text-xs font-bold text-sky-400 uppercase">1. Phương tiện thiết bị (ĐVSD)</span>
+                <span class="text-[11px] text-slate-400">Phụ lục 1 KT01</span>
+              </div>
+
+              <div>
+                <label class="text-[11px] text-slate-400 font-medium block mb-1">Chọn Phương tiện thiết bị thực tế:</label>
+                <select id="form-tb-select" class="w-full bg-slate-800 text-white text-xs font-medium rounded-lg p-2 border border-slate-700 focus:outline-none focus:border-sky-500">
+                  <option value="TB0012|Cẩu bánh lốp KATO 25T|cau_banh_lop">TB0012 – Cẩu bánh lốp KATO 25T (Cầu cảng)</option>
+                  <option value="GN0005|Xe nâng Kalmar 45T|xe_nang">GN0005 – Xe nâng Kalmar 45T (Bãi bến)</option>
+                  <option value="DK0008|Xe đầu kéo Shacman 40T|xe_dau_keo">DK0008 – Xe đầu kéo Shacman 40T (Đội xe cơ giới)</option>
+                  <option value="RTG002|Cẩu khung RTG Kalmar|cau_khung">RTG002 – Cẩu khung RTG Kalmar (Bãi Container)</option>
+                </select>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-[11px] text-slate-400 font-medium block mb-1">Mã thiết bị:</label>
+                  <input type="text" id="form-ma-tb" value="TB0012" class="w-full bg-slate-800 text-sky-400 font-mono text-xs rounded-lg p-2 border border-slate-700">
+                </div>
+                <div>
+                  <label class="text-[11px] text-slate-400 font-medium block mb-1">Đơn vị quản lý:</label>
+                  <input type="text" value="XN Xếp dỡ QNP" readonly class="w-full bg-slate-800/60 text-slate-400 text-xs rounded-lg p-2 border border-slate-700">
+                </div>
+              </div>
+
+              <div class="border-t border-slate-800 pt-2 flex flex-col gap-2">
+                <span class="text-[11px] font-semibold text-slate-300">Mốc khai báo ban đầu (Gốc đoạn 1):</span>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="text-[10px] text-slate-400 block mb-0.5">Ngày mốc:</label>
+                    <input type="date" id="form-ngay-moc" value="2026-10-31" class="w-full bg-slate-800 text-white font-mono text-xs rounded p-1.5 border border-slate-700">
+                  </div>
+                  <div>
+                    <label class="text-[10px] text-slate-400 block mb-0.5">Giờ mốc (H gốc):</label>
+                    <input type="number" id="form-gio-moc" value="820" class="w-full bg-slate-800 text-amber-400 font-mono text-xs rounded p-1.5 border border-slate-700">
+                  </div>
+                </div>
+                <div>
+                  <label class="text-[10px] text-slate-400 block mb-0.5">Cấp bảo dưỡng gần nhất trước đó:</label>
+                  <select id="form-cap-gn" class="w-full bg-slate-800 text-white font-mono text-xs rounded p-1.5 border border-slate-700">
+                    <option value="none" selected>Bắt đầu từ 0h (Máy mới xuất xưởng / Chưa từng BD)</option>
+                    <option value="300">Cấp 300h</option>
+                    <option value="600">Cấp 600h</option>
+                    <option value="900">Cấp 900h</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Box 2: Quy tắc Nghiệp vụ FAST FBO -->
+            <div class="bg-slate-900/80 border border-port-border rounded-xl p-3.5 flex flex-col gap-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span class="text-xs font-bold text-sky-400 uppercase">2. Quy tắc Nghiệp vụ (FAST FBO)</span>
+                <span class="text-[11px] text-slate-400">Thuật toán core</span>
+              </div>
+
+              <!-- Cách tính mốc -->
+              <div>
+                <label class="text-[11px] text-slate-300 font-semibold block mb-1.5">Cách tính mốc kế tiếp (Q3):</label>
+                <div class="grid grid-cols-2 gap-2">
+                  <label class="flex items-center gap-2 bg-slate-800 p-2 rounded-lg border border-slate-700 cursor-pointer hover:border-sky-500">
+                    <input type="radio" name="form-cach-tinh-moc" value="1" checked class="text-sky-600 accent-sky-500">
+                    <span class="text-xs">1. Cố định theo chu kỳ</span>
+                  </label>
+                  <label class="flex items-center gap-2 bg-slate-800 p-2 rounded-lg border border-slate-700 cursor-pointer hover:border-sky-500">
+                    <input type="radio" name="form-cach-tinh-moc" value="2" class="text-sky-600 accent-sky-500">
+                    <span class="text-xs">2. Trượt theo giờ BD</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Switch Lặp chu kỳ & Bao trùm -->
+              <div class="grid grid-cols-2 gap-2">
+                <div class="bg-slate-800 p-2 rounded-lg border border-slate-700 flex items-center justify-between">
+                  <div>
+                    <div class="text-xs font-semibold text-slate-200">Lặp chu kỳ (Q2)</div>
+                    <div class="text-[10px] text-slate-400">Hết 1200h sang CK mới</div>
+                  </div>
+                  <input type="checkbox" id="form-lap-chu-ky" checked class="w-5 h-5 rounded text-sky-600 accent-sky-500 cursor-pointer">
+                </div>
+
+                <div class="bg-slate-800 p-2 rounded-lg border border-slate-700 flex items-center justify-between">
+                  <div>
+                    <div class="text-xs font-semibold text-slate-200">Bao trùm (Q8)</div>
+                    <div class="text-[10px] text-slate-400">Làm cấp sau đóng cấp trước</div>
+                  </div>
+                  <input type="checkbox" id="form-bao-trum" checked class="w-5 h-5 rounded text-sky-600 accent-sky-500 cursor-pointer">
+                </div>
+              </div>
+
+              <!-- Ngày reset SC lớn -->
+              <div>
+                <label class="text-[11px] text-slate-300 font-semibold block mb-1">Mốc reset Sửa chữa lớn (SC BIG):</label>
+                <select id="form-ngay-reset" class="w-full bg-slate-800 text-white text-xs rounded-lg p-2 border border-slate-700">
+                  <option value="1" selected>Cách 1: Lấy theo Ngày lập phiếu (ngay_ct)</option>
+                  <option value="2">Cách 2: Lấy theo Ngày ra thực tế (ngay_ra)</option>
+                </select>
+              </div>
+
+              <!-- Cường độ giờ hoạt động -->
+              <div class="border-t border-slate-800 pt-2">
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-[11px] text-slate-300 font-semibold">Giờ làm việc mỗi ngày:</label>
+                  <span id="form-gio-display" class="text-xs font-mono font-bold text-amber-400">10.0 h/ngày (600 ph)</span>
+                </div>
+                <input type="range" id="form-gio-slider" min="2" max="24" step="0.5" value="10" class="w-full accent-sky-500 cursor-pointer">
+                <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+                  <span>2h (Nhàn rỗi)</span>
+                  <span>10h (Trung bình cảng)</span>
+                  <span>24h (3 ca liên tục)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Box 3: Định mức các cấp bảo dưỡng (QNP SOP KT01 - Trang 5) -->
+            <div class="bg-slate-900/80 border border-port-border rounded-xl p-3.5 flex flex-col gap-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span class="text-xs font-bold text-sky-400 uppercase">3. Định mức cấp & Thời gian thi công</span>
+                <span class="text-[11px] text-slate-400">Mục 1.2 KT01</span>
+              </div>
+
+              <div class="text-[11px] text-slate-400">
+                Quy định thời gian hoàn thành sửa chữa - bảo dưỡng tại Cảng Quy Nhơn (Trang 5):
+              </div>
+
+              <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <!-- Cấp 300 -->
+                <div class="flex items-center justify-between bg-slate-800/80 p-2 rounded-lg border border-slate-700/80 text-xs font-mono">
+                  <div>
+                    <span class="font-bold text-sky-400">Cấp 300h</span>
+                    <span class="text-slate-400 text-[10px] block">Cảnh báo trước: 30h</span>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-emerald-400 font-semibold">12h thi công</span>
+                    <span class="text-slate-400 text-[10px] block">(~1 ngày ra)</span>
+                  </div>
+                </div>
+
+                <!-- Cấp 600 -->
+                <div class="flex items-center justify-between bg-slate-800/80 p-2 rounded-lg border border-slate-700/80 text-xs font-mono">
+                  <div>
+                    <span class="font-bold text-sky-400">Cấp 600h</span>
+                    <span class="text-slate-400 text-[10px] block">Cảnh báo trước: 30h</span>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-emerald-400 font-semibold">24h thi công</span>
+                    <span class="text-slate-400 text-[10px] block">(~2 ngày ra)</span>
+                  </div>
+                </div>
+
+                <!-- Cấp 900 -->
+                <div class="flex items-center justify-between bg-slate-800/80 p-2 rounded-lg border border-slate-700/80 text-xs font-mono">
+                  <div>
+                    <span class="font-bold text-sky-400">Cấp 900h</span>
+                    <span class="text-slate-400 text-[10px] block">Cảnh báo trước: 30h</span>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-emerald-400 font-semibold">24h thi công</span>
+                    <span class="text-slate-400 text-[10px] block">(~2 ngày ra)</span>
+                  </div>
+                </div>
+
+                <!-- Cấp 1200 -->
+                <div class="flex items-center justify-between bg-slate-800/80 p-2 rounded-lg border border-slate-700/80 text-xs font-mono">
+                  <div>
+                    <span class="font-bold text-sky-400">Cấp 1200h (Cuối CK)</span>
+                    <span class="text-slate-400 text-[10px] block">Cảnh báo trước: 30h</span>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-amber-400 font-semibold">36h thi công</span>
+                    <span class="text-slate-400 text-[10px] block">(~3 ngày ra)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick note about RACI -->
+              <div class="text-[10px] text-slate-400 bg-slate-950/60 p-2 rounded border border-slate-800">
+                📌 <strong>RACI:</strong> ĐVSD lập báo cáo (R) → PKT lập kế hoạch & duyệt kỹ thuật (A) → XNSCCK thi công & lập quyết toán (R).
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: DÒNG CẢNH BÁO TẠI NGÀY X -->
+      <div id="tab-alerts" class="tab-content block">
+        <div class="bg-port-panel border border-port-border rounded-xl overflow-hidden shadow-lg flex flex-col gap-0">
+          
+          <!-- Legend Color Code Header -->
+          <div class="p-3 bg-slate-900/90 border-b border-port-border flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-slate-200">Dòng cảnh báo hiệu lực ngày:</span>
+              <span id="table-active-date" class="font-mono font-bold text-sky-400 text-sm">01/08/2026</span>
+            </div>
+            
+            <!-- Level Legend badges -->
+            <div class="flex items-center gap-2 flex-wrap text-[11px] font-semibold">
+              <span class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Màu phân cấp:</span>
+              <span class="px-2 py-0.5 rounded-md bg-sky-950/80 text-sky-300 border border-sky-600/60 flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-sky-400"></span> Cấp 300h
+              </span>
+              <span class="px-2 py-0.5 rounded-md bg-purple-950/80 text-purple-300 border border-purple-600/60 flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-purple-400"></span> Cấp 600h
+              </span>
+              <span class="px-2 py-0.5 rounded-md bg-amber-950/80 text-amber-300 border border-amber-600/60 flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-amber-400"></span> Cấp 900h
+              </span>
+              <span class="px-2 py-0.5 rounded-md bg-rose-950/80 text-rose-300 border border-rose-600/60 flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-rose-400"></span> Cấp 1200h (Cuối CK)
+              </span>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-800/80 text-slate-400 uppercase font-mono text-[11px] border-b border-port-border">
+                <tr>
+                  <th class="py-2.5 px-3">Cấp & Phân nhóm</th>
+                  <th class="py-2.5 px-3 text-right">Mốc (h)</th>
+                  <th class="py-2.5 px-3 text-right">Giờ H(X)</th>
+                  <th class="py-2.5 px-3" style="width: 220px;">Tiến độ tích lũy</th>
+                  <th class="py-2.5 px-3 text-right">Chênh lệch</th>
+                  <th class="py-2.5 px-3 text-center">Đến hạn</th>
+                  <th class="py-2.5 px-3 text-center">Dự báo</th>
+                  <th class="py-2.5 px-3 text-center">Tình trạng</th>
+                  <th class="py-2.5 px-3 text-center">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-alerts" class="divide-y divide-port-border/60">
+                <!-- Injected via JS with cycle grouping -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: TOÀN BỘ DÒNG ENGINE -->
+      <div id="tab-all-rows" class="tab-content hidden">
+        <div class="bg-port-panel border border-port-border rounded-xl overflow-hidden shadow-lg">
+          <div class="p-3 bg-slate-900/90 border-b border-port-border flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span class="font-bold text-slate-200">Toàn bộ danh sách dòng do Engine sinh (Phân nhóm theo Chu kỳ & Cấp):</span>
+            <div class="flex items-center gap-2 text-[11px]">
+              <span class="px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-700">0: Mở</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700">1: Đã BD</span>
+              <span class="px-2 py-0.5 rounded bg-teal-950/80 text-teal-300 border border-teal-700">2: Bao trùm</span>
+              <span class="px-2 py-0.5 rounded bg-rose-950/80 text-rose-300 border border-rose-700">9: Hủy reset</span>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-800/80 text-slate-400 uppercase font-mono text-[11px] border-b border-port-border">
+                <tr>
+                  <th class="py-2.5 px-2 text-center">ID</th>
+                  <th class="py-2.5 px-3">Cấp bảo dưỡng</th>
+                  <th class="py-2.5 px-3 text-right">Mốc (h)</th>
+                  <th class="py-2.5 px-3 text-center">Ngày sinh</th>
+                  <th class="py-2.5 px-3 text-center">Ngày đến hạn</th>
+                  <th class="py-2.5 px-3 text-center">Ngày đóng</th>
+                  <th class="py-2.5 px-3 text-right">Giờ lúc BD</th>
+                  <th class="py-2.5 px-3 text-center">Trạng thái</th>
+                  <th class="py-2.5 px-3">Số chứng từ KT01</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-all-rows" class="divide-y divide-port-border/60 font-mono">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: NHẬT KÝ & NGOẠI LỆ -->
+      <div id="tab-logs" class="tab-content hidden">
+        <div class="bg-port-panel border border-port-border rounded-xl p-4 shadow-lg">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-xs font-bold text-slate-300 uppercase font-mono">Nhật ký xử lý (Engine Logs & Exceptions)</h3>
+            <button id="btn-clear-logs" class="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800 border border-slate-700">Làm sạch</button>
+          </div>
+          <div id="log-list" class="space-y-1.5 max-h-72 overflow-y-auto font-mono text-xs text-slate-300 pr-1">
+            <!-- Logs injected here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: KẾT QUẢ KIỂM THỬ TỰ ĐỘNG -->
+      <div id="tab-tests" class="tab-content hidden">
+        <div class="bg-port-panel border border-port-border rounded-xl p-4 shadow-lg flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-white">Kiểm thử bắt buộc tự động (Mục D)</h3>
+              <p class="text-xs text-slate-400">Tự động đối chiếu với kết quả chuẩn nghiệp vụ khi khởi tạo</p>
+            </div>
+            <span id="test-badge-full" class="px-3 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-600 text-xs font-bold font-mono">
+              6/6 TEST PASS
+            </span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+              <thead class="bg-slate-800 text-slate-400 uppercase text-[11px] border-b border-port-border">
+                <tr>
+                  <th class="py-2 px-3">Test Case</th>
+                  <th class="py-2 px-3">Kịch bản kiểm tra</th>
+                  <th class="py-2 px-3">Kỳ vọng nghiệp vụ</th>
+                  <th class="py-2 px-3">Kết quả thực tế</th>
+                  <th class="py-2 px-3 text-center">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-test-results" class="divide-y divide-port-border/60">
+                <!-- Test rows injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- MODAL TƯƠNG TÁC QUY TRÌNH BẢO DƯỠNG (INTERACTIVE SOP POPUP)          -->
+  <!-- Tự động hiện khi máy chạy tới cấp giờ và hỏi NSD duyệt phiếu        -->
+  <!-- =================================================================== -->
+  <div id="modal-interactive-ticket" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-port-panel border-2 border-sky-500/80 rounded-2xl w-full max-w-xl shadow-2xl p-5 sm:p-6 flex flex-col gap-4 transform transition-all scale-100">
+      
+      <!-- Modal Header -->
+      <div class="flex items-start justify-between border-b border-port-border pb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-xl font-bold">
+            ⚠️
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              QUY TRÌNH BẢO DƯỠNG ĐỊNH KỲ (KT01 - QNP)
+            </h3>
+            <p class="text-xs text-slate-400">Thiết bị sắp tới / đã đến hạn số giờ quy định cần thực hiện bảo dưỡng</p>
+          </div>
+        </div>
+        <button id="btn-modal-close" class="text-slate-400 hover:text-white text-lg font-bold p-1">✕</button>
+      </div>
+
+      <!-- Machine & Trigger Status Summary -->
+      <div class="bg-slate-900/90 rounded-xl p-3.5 border border-slate-800 grid grid-cols-2 gap-3 text-xs">
+        <div>
+          <span class="text-slate-400 block mb-0.5">Phương tiện thiết bị:</span>
+          <span id="modal-tb-info" class="font-bold text-sky-400 font-mono text-sm">TB0012 - Cẩu bánh lốp KATO 25T</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block mb-0.5">Cấp cần bảo dưỡng:</span>
+          <span id="modal-cap-info" class="font-bold text-amber-400 font-mono text-sm">Cấp 900h (Mốc: 900 h)</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block mb-0.5">Ngày phát sinh cảnh báo:</span>
+          <span id="modal-date-info" class="font-mono text-white">05/11/2026</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block mb-0.5">Giờ máy hiện tại H(X):</span>
+          <span id="modal-hours-info" class="font-mono text-amber-300 font-bold">870,0 h (Còn 30 h)</span>
+        </div>
+      </div>
+
+      <!-- Action Proposal Prompt -->
+      <div class="text-xs text-slate-300 bg-sky-950/40 border border-sky-800/60 p-3 rounded-xl flex flex-col gap-1.5">
+        <div class="font-bold text-sky-300 flex items-center gap-1.5">
+          <span>📋</span> Bước 4 SOP KT01: XNSCCK thực hiện & lập Biên bản nghiệm thu kỹ thuật (BBNT)
+        </div>
+        <p class="text-slate-400 leading-relaxed">
+          Định mức thi công cấp này là <strong id="modal-lead-time" class="text-emerald-400">24 giờ làm việc (~2 ngày ra)</strong>. 
+          Bạn có muốn phê duyệt và lập <strong>Biên bản nghiệm thu bảo dưỡng</strong> cho cấp này không?
+        </p>
+      </div>
+
+      <!-- Ticket Creation Form inside Modal -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <div>
+          <label class="text-[11px] text-slate-400 block mb-1">Số chứng từ (BBNT / Phiếu BD):</label>
+          <input type="text" id="modal-input-so-ct" value="TH001/BB-XNSCCK" class="w-full bg-slate-800 text-white font-mono rounded-lg p-2 border border-slate-700">
+        </div>
+        <div>
+          <label class="text-[11px] text-slate-400 block mb-1">Ngày nghiệm thu bàn giao (Ngày ra):</label>
+          <input type="date" id="modal-input-ngay-ra" value="2026-11-10" class="w-full bg-slate-800 text-emerald-400 font-mono rounded-lg p-2 border border-slate-700">
+        </div>
+      </div>
+
+      <!-- Decision Buttons -->
+      <div class="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-port-border">
+        <button id="btn-modal-ignore" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">
+          Chưa làm (Chạy tiếp để xem quá hạn)
+        </button>
+        <button id="btn-modal-confirm" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 flex items-center gap-1.5">
+          <span>✅</span> Duyệt & Hoàn thành BD (Tự chạy tiếp)
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="bg-port-panel border-t border-port-border px-4 py-2 text-[11px] text-slate-400 flex flex-wrap items-center justify-between gap-2">
+    <div>Dự án: <strong class="text-slate-300">Cảng Quy Nhơn (QNP)</strong> – Phân hệ Quản lý Thiết bị & Bảo dưỡng (FAST FBO / Quy trình KT01)</div>
+    <div class="flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+      <span>Three.js r128 Engine • WebGL Hardware Accelerated</span>
+    </div>
+  </footer>
+
+  <!-- =================================================================== -->
+  <!-- JAVASCRIPT: ENGINE NGHIỆP VỤ + 3D SCENE + KIỂM THỬ TỰ ĐỘNG          -->
+  <!-- =================================================================== -->
+  <script>
+    /**
+     * CÁC HÀM TIỆN ÍCH NGÀY THÁNG, SỐ VÀ NGẪU NHIÊN CƠ BẢN
+     */
+    function parseDate(dStr) {
+      if (!dStr) return new Date();
+      const parts = dStr.split('-');
+      return new Date(parts[0], parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    }
+
+    function diffDays(d1, d2) {
+      if (!d1 || !d2) return 0;
+      const t1 = parseDate(d1).getTime();
+      const t2 = parseDate(d2).getTime();
+      return Math.round((t2 - t1) / (1000 * 3600 * 24));
+    }
+
+    function addDays(dStr, days) {
+      if (!dStr) return '';
+      const d = parseDate(dStr);
+      d.setDate(d.getDate() + days);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function formatVNDate(dStr) {
+      if (!dStr) return '—';
+      const parts = dStr.split('-');
+      if (parts.length < 3) return dStr;
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    function formatNumber(num, decimals = 1) {
+      if (num === null || num === undefined || isNaN(num)) return '0';
+      return Number(num).toLocaleString('vi-VN', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function createPRNG(seed) {
+      let s = seed % 2147483647;
+      if (s <= 0) s += 2147483646;
+      return function() {
+        s = (s * 16807) % 2147483647;
+        return (s - 1) / 2147483646;
+      };
+    }
+
+    function setPlaying(play) {
+      isPlaying = play;
+      const icon = document.getElementById('play-icon');
+      const text = document.getElementById('play-text');
+      const btn = document.getElementById('btn-play-pause');
+      if (!icon || !text || !btn) return;
+      if (isPlaying) {
+        icon.textContent = '⏸️';
+        text.textContent = 'Tạm dừng';
+        btn.classList.add('bg-amber-600', 'hover:bg-amber-500');
+        btn.classList.remove('bg-sky-600', 'hover:bg-sky-500');
+      } else {
+        icon.textContent = '▶️';
+        text.textContent = 'Tiếp tục';
+        btn.classList.add('bg-sky-600', 'hover:bg-sky-500');
+        btn.classList.remove('bg-amber-600', 'hover:bg-amber-500');
+      }
+    }
+
+    function renderLogs(logs, viewDate) {
+      const container = document.getElementById('log-list');
+      if (!container) return;
+      document.getElementById('count-logs').textContent = logs.length;
+      if (logs.length === 0) {
+        container.innerHTML = '<div class="text-slate-500 italic py-2">Chưa có nhật ký phát sinh</div>';
+        return;
+      }
+      container.innerHTML = logs.map(l => {
+        let colorClass = 'text-slate-300';
+        if (l.loai === 'BD_XONG') colorClass = 'text-emerald-400 font-semibold';
+        else if (l.loai === 'BAO_TRUM') colorClass = 'text-teal-300';
+        else if (l.loai === 'RESET_SC') colorClass = 'text-rose-400 font-semibold';
+        else if (l.loai === 'BD_NGOAI') colorClass = 'text-amber-400 font-semibold';
+        const isToday = l.ngay === viewDate;
+        return `
+          <div class="py-1 px-2 rounded ${isToday ? 'bg-sky-950/60 border border-sky-800/80' : 'hover:bg-slate-800/50'} flex items-start gap-2">
+            <span class="text-slate-500 shrink-0">[${formatVNDate(l.ngay)}]</span>
+            <span class="${colorClass}">${l.noi_dung}</span>
+          </div>
+        `;
+      }).reverse().join('');
+    }
+
+    /**
+     * KỊCH BẢN ZERO: KHỞI ĐỘNG CHẠY TỪ 0H (MÁY MỚI XUẤT XƯỞNG)
+     * Thiết bị chạy từ 0h, tích lũy dần, vào vùng cảnh báo từng cấp và hỏi NSD duyệt bảo dưỡng
+     */
+    const ZERO_PARAMS = {
+      "thiet_bi": { "ma_tb": "TB0012", "ten_tb": "Cẩu bánh lốp KATO 25T", "mo_hinh": "cau_banh_lop" },
+      "dinh_muc": [
+        { "ma_cap": "300",  "stt": 1, "gio_dm": 300,  "gio_cb": 30, "hours_lead": 12 },
+        { "ma_cap": "600",  "stt": 2, "gio_dm": 600,  "gio_cb": 30, "hours_lead": 24 },
+        { "ma_cap": "900",  "stt": 3, "gio_dm": 900,  "gio_cb": 30, "hours_lead": 24 },
+        { "ma_cap": "1200", "stt": 4, "gio_dm": 1200, "gio_cb": 30, "hours_lead": 36 }
+      ],
+      "tham_so": {
+        "cach_tinh_moc": 1,
+        "lap_chu_ky": true,
+        "bao_trum": true,
+        "ngay_reset": 1
+      },
+      "moc_khai_bao": { "ngay_moc": "2026-08-01", "gio_moc": 0, "ma_cap_gn": "none", "gio_cap_gn": null },
+      "gio_hoat_dong": {
+        "che_do": "deu",
+        "dvt_nhap": "PHUT",
+        "so_luong_moi_ngay": 600,
+        "ngau_nhien": { "min": 360, "max": 840, "seed": 12, "ty_le_ngay_nghi": 0.1 },
+        "danh_sach": []
+      },
+      "phieu": [],
+      "demo": { "tu_ngay": "2026-08-01", "den_ngay": "2026-12-30", "toc_do_ngay_moi_giay": 3, "tu_chay": true }
+    };
+
+    /**
+     * KỊCH BẢN TC1 CHUẨN ĐỂ KIỂM THỬ MỤC D
+     */
+    const TC1_PARAMS = {
+      "thiet_bi": { "ma_tb": "TB0012", "ten_tb": "Cẩu bánh lốp KATO 25T", "mo_hinh": "cau_banh_lop" },
+      "dinh_muc": [
+        { "ma_cap": "300",  "stt": 1, "gio_dm": 300,  "gio_cb": 30, "hours_lead": 12 },
+        { "ma_cap": "600",  "stt": 2, "gio_dm": 600,  "gio_cb": 30, "hours_lead": 24 },
+        { "ma_cap": "900",  "stt": 3, "gio_dm": 900,  "gio_cb": 30, "hours_lead": 24 },
+        { "ma_cap": "1200", "stt": 4, "gio_dm": 1200, "gio_cb": 30, "hours_lead": 36 }
+      ],
+      "tham_so": {
+        "cach_tinh_moc": 1,
+        "lap_chu_ky": true,
+        "bao_trum": true,
+        "ngay_reset": 1
+      },
+      "moc_khai_bao": { "ngay_moc": "2026-10-31", "gio_moc": 820, "ma_cap_gn": "600", "gio_cap_gn": null },
+      "gio_hoat_dong": {
+        "che_do": "deu",
+        "dvt_nhap": "PHUT",
+        "so_luong_moi_ngay": 600,
+        "ngau_nhien": { "min": 360, "max": 840, "seed": 12, "ty_le_ngay_nghi": 0.1 },
+        "danh_sach": []
+      },
+      "phieu": [
+        { "so_ct": "TH001", "loai": "BD", "ma_cap": "900", "ngay_ct": "2026-11-09", "ngay_ra": "2026-11-10" },
+        { "so_ct": "TH009", "loai": "SC", "ma_cap": "BIG", "ngay_ct": "2026-12-18", "ngay_ra": "2026-12-24" }
+      ],
+      "demo": { "tu_ngay": "2026-10-31", "den_ngay": "2026-12-30", "toc_do_ngay_moi_giay": 3, "tu_chay": true }
+    };
+
+    // Mặc định nạp kịch bản ZERO (Chạy từ 0h)
+    let currentParams = JSON.parse(JSON.stringify(ZERO_PARAMS));
+
+    // Global simulation state
+    let simDates = [];
+    let currentDayIndex = 0;
+    let isPlaying = false;
+    let playSpeed = 3;
+    let lastAnimTimestamp = null;
+    let accumTime = 0;
+
+    // Engine output state
+    let engineCache = { dongs: [], logs: [], doans: [], dailyHoursMap: {} };
+
+    // Set theo dõi các dòng đã hỏi người dùng để tránh hỏi lặp lại liên tục
+    let promptedRowsSet = new Set();
+    let currentPendingPromptRow = null;
+
+    /**
+     * HÀM TIỆN ÍCH TRẢ VỀ MÀU SẮC & BADGE CHO TỪNG CẤP BẢO DƯỠNG
+     */
+    function getCapVisualInfo(maCap) {
+      const capStr = String(maCap);
+      if (capStr === '300') {
+        return {
+          name: 'Cấp 300h',
+          short: '300h',
+          code: '300',
+          desc: 'Định kỳ 1 (12h)',
+          colorHex: 0x38bdf8,
+          badgeClass: 'bg-sky-950/80 text-sky-300 border-sky-600/70',
+          dotColor: 'bg-sky-400',
+          barGradient: 'from-sky-500 to-sky-400',
+          icon: '🔹'
+        };
+      } else if (capStr === '600') {
+        return {
+          name: 'Cấp 600h',
+          short: '600h',
+          code: '600',
+          desc: 'Định kỳ 2 (24h)',
+          colorHex: 0xa855f7,
+          badgeClass: 'bg-purple-950/80 text-purple-300 border-purple-600/70',
+          dotColor: 'bg-purple-400',
+          barGradient: 'from-purple-500 to-purple-400',
+          icon: '🔷'
+        };
+      } else if (capStr === '900') {
+        return {
+          name: 'Cấp 900h',
+          short: '900h',
+          code: '900',
+          desc: 'Định kỳ 3 (24h)',
+          colorHex: 0xfb923c,
+          badgeClass: 'bg-amber-950/80 text-amber-300 border-amber-600/70',
+          dotColor: 'bg-amber-400',
+          barGradient: 'from-amber-500 to-amber-400',
+          icon: '🔶'
+        };
+      } else if (capStr === '1200') {
+        return {
+          name: 'Cấp 1200h',
+          short: '1200h',
+          code: '1200',
+          desc: 'Đại tu cuối CK (36h)',
+          colorHex: 0xf43f5e,
+          badgeClass: 'bg-rose-950/80 text-rose-300 border-rose-600/70',
+          dotColor: 'bg-rose-400',
+          barGradient: 'from-rose-500 to-rose-400',
+          icon: '🔴'
+        };
+      }
+      return {
+        name: `Cấp ${maCap}h`,
+        short: `${maCap}h`,
+        code: String(maCap),
+        desc: 'Định kỳ',
+        colorHex: 0x818cf8,
+        badgeClass: 'bg-indigo-950/80 text-indigo-300 border-indigo-600/70',
+        dotColor: 'bg-indigo-400',
+        barGradient: 'from-indigo-500 to-indigo-400',
+        icon: '⚙️'
+      };
+    }
+
+    function convertToHours(qty, unit) {
+      if (!qty || isNaN(qty)) return 0;
+      const u = (unit || 'GIO').toUpperCase();
+      if (u === 'PHUT') return qty / 60;
+      if (u === 'GIAY') return qty / 3600;
+      return qty;
+    }
+
+    function buildDailyHoursMap(params, tuNgay, denNgay) {
+      const map = {};
+      const cfg = params.gio_hoat_dong || {};
+      const dvt = cfg.dvt_nhap || 'GIO';
+      const mode = cfg.che_do || 'deu';
+      const totalDays = diffDays(tuNgay, denNgay);
+
+      if (mode === 'danh_sach' && Array.isArray(cfg.danh_sach)) {
+        for (const item of cfg.danh_sach) {
+          map[item.ngay] = convertToHours(item.so_luong, dvt);
+        }
+      } else if (mode === 'ngau_nhien') {
+        const randCfg = cfg.ngau_nhien || { min: 360, max: 840, seed: 12, ty_le_ngay_nghi: 0.1 };
+        const prng = createPRNG(randCfg.seed || 12);
+        for (let i = 0; i <= totalDays; i++) {
+          const dt = addDays(tuNgay, i);
+          const isRest = prng() < (randCfg.ty_le_ngay_nghi || 0);
+          if (isRest) {
+            map[dt] = 0;
+          } else {
+            const raw = (randCfg.min || 0) + prng() * ((randCfg.max || 0) - (randCfg.min || 0));
+            map[dt] = convertToHours(raw, dvt);
+          }
+        }
+      } else {
+        const val = convertToHours(cfg.so_luong_moi_ngay ?? 600, dvt);
+        for (let i = 0; i <= totalDays; i++) {
+          map[addDays(tuNgay, i)] = val;
+        }
+      }
+      return map;
+    }
+
+    function tinhLai(params, maxDenNgay) {
+      const logs = [];
+      const dongs = [];
+      let nextRowId = 1;
+
+      const dinhMuc = (params.dinh_muc || []).slice().sort((a, b) => a.stt - b.stt);
+      if (dinhMuc.length === 0) {
+        logs.push({ loai: 'ERROR', noi_dung: 'Chưa cấu hình định mức cấp bảo dưỡng' });
+        return { dongs, logs, doans: [] };
+      }
+      const C = Math.max(...dinhMuc.map(d => d.gio_dm));
+
+      const cachTinhMoc = params.tham_so?.cach_tinh_moc ?? 1;
+      const lapChuKy = params.tham_so?.lap_chu_ky ?? true;
+      const baoTrum = params.tham_so?.bao_trum ?? true;
+      const ngayResetMode = params.tham_so?.ngay_reset ?? 1;
+
+      const tuNgay = params.demo?.tu_ngay || params.moc_khai_bao?.ngay_moc || '2026-10-31';
+      const denNgay = maxDenNgay || params.demo?.den_ngay || '2026-12-30';
+
+      const dailyHours = buildDailyHoursMap(params, tuNgay, denNgay);
+
+      const phieuList = (params.phieu || []).slice();
+      const scList = phieuList.filter(p => p.loai === 'SC' && String(p.ma_cap).toUpperCase() === 'BIG');
+
+      scList.forEach(p => {
+        p._ngay_reset = (ngayResetMode === 1) ? p.ngay_ct : (p.ngay_ra || p.ngay_ct);
+      });
+      scList.sort((a, b) => a._ngay_reset.localeCompare(b._ngay_reset));
+
+      const doans = [];
+      let currentNgayGoc = params.moc_khai_bao?.ngay_moc || tuNgay;
+      let currentGioGoc = params.moc_khai_bao?.gio_moc || 0;
+      let doanIndex = 1;
+
+      if (scList.length === 0) {
+        doans.push({
+          id: doanIndex,
+          ngay_goc: currentNgayGoc,
+          gio_goc: currentGioGoc,
+          ngay_ket_thuc: denNgay,
+          is_khai_bao: true,
+          sc_phieu: null
+        });
+      } else {
+        let lastGoc = currentNgayGoc;
+        let lastGio = currentGioGoc;
+        let isFirst = true;
+
+        for (const sc of scList) {
+          if (sc._ngay_reset < lastGoc) continue;
+          doans.push({
+            id: doanIndex++,
+            ngay_goc: lastGoc,
+            gio_goc: lastGio,
+            ngay_ket_thuc: sc._ngay_reset,
+            is_khai_bao: isFirst,
+            sc_phieu: sc
+          });
+          isFirst = false;
+          lastGoc = sc._ngay_reset;
+          lastGio = 0;
+        }
+        doans.push({
+          id: doanIndex,
+          ngay_goc: lastGoc,
+          gio_goc: 0,
+          ngay_ket_thuc: denNgay,
+          is_khai_bao: false,
+          sc_phieu: null
+        });
+      }
+
+      function getNextCap(currStt, currChuKy) {
+        const nextDm = dinhMuc.find(d => d.stt === currStt + 1);
+        if (nextDm) {
+          return { dm: nextDm, chu_ky: currChuKy };
+        }
+        if (lapChuKy) {
+          return { dm: dinhMuc[0], chu_ky: currChuKy + 1 };
+        }
+        return null;
+      }
+
+      function tinhMocCoDinh(chuKy, gioDm) {
+        return (chuKy - 1) * C + gioDm;
+      }
+
+      for (const doan of doans) {
+        const doanDongs = [];
+
+        // B3: Dòng đầu đoạn
+        if (doan.is_khai_bao && params.moc_khai_bao?.ma_cap_gn && params.moc_khai_bao.ma_cap_gn !== 'none') {
+          const maCapGn = String(params.moc_khai_bao.ma_cap_gn);
+          const dmGn = dinhMuc.find(d => String(d.ma_cap) === maCapGn) || dinhMuc[0];
+          const gioDmGn = dmGn.gio_dm;
+          const gioMoc = doan.gio_goc;
+
+          const chuKyGn = (gioMoc >= gioDmGn)
+            ? Math.floor((gioMoc - gioDmGn) / C) + 1
+            : 1;
+
+          const mocCdGn = tinhMocCoDinh(chuKyGn, gioDmGn);
+          const gioLucBdGn = params.moc_khai_bao.gio_cap_gn !== null && params.moc_khai_bao.gio_cap_gn !== undefined
+            ? params.moc_khai_bao.gio_cap_gn
+            : mocCdGn;
+
+          const rowKb = {
+            id: nextRowId++,
+            doan_id: doan.id,
+            chu_ky: chuKyGn,
+            ma_cap: dmGn.ma_cap,
+            stt: dmGn.stt,
+            gio_dm: dmGn.gio_dm,
+            gio_cb: dmGn.gio_cb,
+            moc: mocCdGn,
+            moc_co_dinh: mocCdGn,
+            ngay_sinh: doan.ngay_goc,
+            ngay_den_han: null,
+            ngay_dong: doan.ngay_goc,
+            trang_thai: 1,
+            gio_luc_bd: gioLucBdGn,
+            so_ct: 'KHAI_BAO',
+            is_khai_bao: true
+          };
+          doanDongs.push(rowKb);
+
+          const nextInfo = getNextCap(dmGn.stt, chuKyGn);
+          if (nextInfo) {
+            const nextMocCd = tinhMocCoDinh(nextInfo.chu_ky, nextInfo.dm.gio_dm);
+            let nextMoc = nextMocCd;
+            if (cachTinhMoc === 2) {
+              nextMoc = (gioLucBdGn ?? mocCdGn) + (nextMocCd - mocCdGn);
+            }
+            const firstRow = {
+              id: nextRowId++,
+              doan_id: doan.id,
+              chu_ky: nextInfo.chu_ky,
+              ma_cap: nextInfo.dm.ma_cap,
+              stt: nextInfo.dm.stt,
+              gio_dm: nextInfo.dm.gio_dm,
+              gio_cb: nextInfo.dm.gio_cb,
+              moc: nextMoc,
+              moc_co_dinh: nextMocCd,
+              ngay_sinh: doan.ngay_goc,
+              ngay_den_han: null,
+              ngay_dong: null,
+              trang_thai: 0,
+              gio_luc_bd: null,
+              so_ct: null,
+              is_khai_bao: false
+            };
+            doanDongs.push(firstRow);
+          }
+        } else {
+          const firstDm = dinhMuc[0];
+          const mocCd = tinhMocCoDinh(1, firstDm.gio_dm);
+          const firstRow = {
+            id: nextRowId++,
+            doan_id: doan.id,
+            chu_ky: 1,
+            ma_cap: firstDm.ma_cap,
+            stt: firstDm.stt,
+            gio_dm: firstDm.gio_dm,
+            gio_cb: firstDm.gio_cb,
+            moc: mocCd,
+            moc_co_dinh: mocCd,
+            ngay_sinh: doan.ngay_goc,
+            ngay_den_han: null,
+            ngay_dong: null,
+            trang_thai: 0,
+            gio_luc_bd: null,
+            so_ct: null,
+            is_khai_bao: false
+          };
+          doanDongs.push(firstRow);
+        }
+
+        const bdTicketsInDoan = phieuList
+          .filter(p => p.loai === 'BD' && p.ngay_ra && p.ngay_ra > doan.ngay_goc && p.ngay_ra <= doan.ngay_ket_thuc)
+          .sort((a, b) => a.ngay_ra.localeCompare(b.ngay_ra));
+
+        function getLuyKeGio(d) {
+          let sum = doan.gio_goc;
+          const days = diffDays(doan.ngay_goc, d);
+          for (let i = 1; i <= days; i++) {
+            const dt = addDays(doan.ngay_goc, i);
+            sum += (dailyHours[dt] || 0);
+          }
+          return sum;
+        }
+
+        function kiemTraSinhDong(denNgayCheck) {
+          let safety = 0;
+          while (safety++ < 100) {
+            const activeList = doanDongs.filter(r => !r.is_khai_bao);
+            if (activeList.length === 0) break;
+            const lastRow = activeList[activeList.length - 1];
+
+            const hNow = getLuyKeGio(denNgayCheck);
+            if (hNow >= lastRow.moc) {
+              let foundNgayDenHan = null;
+              const totalDays = diffDays(doan.ngay_goc, denNgayCheck);
+              let tempH = doan.gio_goc;
+              for (let i = 0; i <= totalDays; i++) {
+                const curDt = addDays(doan.ngay_goc, i);
+                if (i > 0) tempH += (dailyHours[curDt] || 0);
+                if (tempH >= lastRow.moc) {
+                  foundNgayDenHan = curDt;
+                  break;
+                }
+              }
+              if (!lastRow.ngay_den_han) {
+                lastRow.ngay_den_han = foundNgayDenHan || denNgayCheck;
+              }
+
+              const nextInfo = getNextCap(lastRow.stt, lastRow.chu_ky);
+              if (!nextInfo) break;
+
+              const nextMocCd = tinhMocCoDinh(nextInfo.chu_ky, nextInfo.dm.gio_dm);
+              let nextMoc = nextMocCd;
+              if (cachTinhMoc === 2) {
+                const prevBase = (lastRow.gio_luc_bd !== null && lastRow.gio_luc_bd !== undefined) ? lastRow.gio_luc_bd : lastRow.moc;
+                nextMoc = prevBase + (nextMocCd - lastRow.moc_co_dinh);
+              }
+
+              const newRow = {
+                id: nextRowId++,
+                doan_id: doan.id,
+                chu_ky: nextInfo.chu_ky,
+                ma_cap: nextInfo.dm.ma_cap,
+                stt: nextInfo.dm.stt,
+                gio_dm: nextInfo.dm.gio_dm,
+                gio_cb: nextInfo.dm.gio_cb,
+                moc: nextMoc,
+                moc_co_dinh: nextMocCd,
+                ngay_sinh: lastRow.ngay_den_han,
+                ngay_den_han: null,
+                ngay_dong: null,
+                trang_thai: 0,
+                gio_luc_bd: null,
+                so_ct: null,
+                is_khai_bao: false
+              };
+              doanDongs.push(newRow);
+            } else {
+              break;
+            }
+          }
+        }
+
+        const daysInDoan = diffDays(doan.ngay_goc, doan.ngay_ket_thuc);
+        for (let d = 0; d <= daysInDoan; d++) {
+          const checkDate = addDays(doan.ngay_goc, d);
+
+          kiemTraSinhDong(checkDate);
+
+          const ticketsToday = bdTicketsInDoan.filter(p => p.ngay_ra === checkDate);
+          for (const ticket of ticketsToday) {
+            const hTaiNgayRa = getLuyKeGio(ticket.ngay_ra);
+            const targetCap = String(ticket.ma_cap);
+
+            const openMatchRow = doanDongs.find(r => !r.is_khai_bao && r.trang_thai === 0 && String(r.ma_cap) === targetCap);
+
+            if (!openMatchRow) {
+              logs.push({
+                loai: 'BD_NGOAI',
+                ngay: ticket.ngay_ra,
+                so_ct: ticket.so_ct,
+                noi_dung: `Phiếu ${ticket.so_ct} cấp ${targetCap} không tìm thấy dòng đang mở cùng cấp (BD ngoài kế hoạch/sai cấp)`
+              });
+              continue;
+            }
+
+            openMatchRow.trang_thai = 1;
+            openMatchRow.ngay_dong = ticket.ngay_ra;
+            openMatchRow.gio_luc_bd = hTaiNgayRa;
+            openMatchRow.so_ct = ticket.so_ct;
+
+            logs.push({
+              loai: 'BD_XONG',
+              ngay: ticket.ngay_ra,
+              so_ct: ticket.so_ct,
+              noi_dung: `Nghiệm thu hoàn thành bảo dưỡng cấp ${openMatchRow.ma_cap} (${ticket.so_ct}) lúc ${formatNumber(hTaiNgayRa)}h`
+            });
+
+            if (baoTrum) {
+              doanDongs.forEach(r => {
+                if (!r.is_khai_bao && r.trang_thai === 0 && r.id < openMatchRow.id) {
+                  r.trang_thai = 2;
+                  r.ngay_dong = ticket.ngay_ra;
+                  r.so_ct = ticket.so_ct;
+                  logs.push({
+                    loai: 'BAO_TRUM',
+                    ngay: ticket.ngay_ra,
+                    so_ct: ticket.so_ct,
+                    noi_dung: `Dòng cấp ${r.ma_cap} (ID ${r.id}) tự động đóng do bao trùm bởi chứng từ ${ticket.so_ct}`
+                  });
+                }
+              });
+            }
+
+            const nonKbRows = doanDongs.filter(r => !r.is_khai_bao);
+            const isLastRow = nonKbRows.length > 0 && nonKbRows[nonKbRows.length - 1].id === openMatchRow.id;
+
+            if (isLastRow) {
+              const nextInfo = getNextCap(openMatchRow.stt, openMatchRow.chu_ky);
+              if (nextInfo) {
+                const nextMocCd = tinhMocCoDinh(nextInfo.chu_ky, nextInfo.dm.gio_dm);
+                let nextMoc = nextMocCd;
+                if (cachTinhMoc === 2) {
+                  nextMoc = hTaiNgayRa + (nextMocCd - openMatchRow.moc_co_dinh);
+                }
+                const newRow = {
+                  id: nextRowId++,
+                  doan_id: doan.id,
+                  chu_ky: nextInfo.chu_ky,
+                  ma_cap: nextInfo.dm.ma_cap,
+                  stt: nextInfo.dm.stt,
+                  gio_dm: nextInfo.dm.gio_dm,
+                  gio_cb: nextInfo.dm.gio_cb,
+                  moc: nextMoc,
+                  moc_co_dinh: nextMocCd,
+                  ngay_sinh: ticket.ngay_ra,
+                  ngay_den_han: null,
+                  ngay_dong: null,
+                  trang_thai: 0,
+                  gio_luc_bd: null,
+                  so_ct: null,
+                  is_khai_bao: false
+                };
+                doanDongs.push(newRow);
+              }
+            } else if (cachTinhMoc === 2) {
+              const lastIdx = nonKbRows.length - 1;
+              const currentLast = nonKbRows[lastIdx];
+              if (currentLast.trang_thai === 0 && !currentLast.ngay_den_han) {
+                const delta = currentLast.moc_co_dinh - openMatchRow.moc_co_dinh;
+                currentLast.moc = hTaiNgayRa + delta;
+              }
+            }
+          }
+        }
+
+        if (doan.sc_phieu) {
+          const resetDate = doan.ngay_ket_thuc;
+          doanDongs.forEach(r => {
+            if (!r.is_khai_bao && r.trang_thai === 0) {
+              r.trang_thai = 9;
+              r.ngay_dong = resetDate;
+              r.so_ct = doan.sc_phieu.so_ct;
+            }
+          });
+          logs.push({
+            loai: 'RESET_SC',
+            ngay: resetDate,
+            so_ct: doan.sc_phieu.so_ct,
+            noi_dung: `Sửa chữa lớn (SC BIG - ${doan.sc_phieu.so_ct}) thiết lập lại toàn bộ chu kỳ từ 0h vào ngày ${formatVNDate(resetDate)}`
+          });
+        }
+
+        dongs.push(...doanDongs);
+      }
+
+      return { dongs, logs, doans, dailyHoursMap: dailyHours };
+    }
+
+    function baoCao(params, engineResult, viewDate) {
+      const { dongs, doans, dailyHoursMap } = engineResult;
+
+      let activeDoan = doans[0];
+      for (const d of doans) {
+        if (viewDate >= d.ngay_goc && viewDate <= d.ngay_ket_thuc) {
+          activeDoan = d;
+          break;
+        }
+      }
+      if (!activeDoan && doans.length > 0) {
+        activeDoan = doans[doans.length - 1];
+      }
+
+      let H_X = activeDoan.gio_goc;
+      const daysCount = Math.max(0, diffDays(activeDoan.ngay_goc, viewDate));
+      for (let i = 1; i <= daysCount; i++) {
+        const dt = addDays(activeDoan.ngay_goc, i);
+        H_X += (dailyHoursMap[dt] || 0);
+      }
+
+      let sum30 = 0, count30 = 0;
+      for (let i = 0; i < 30; i++) {
+        const dt = addDays(viewDate, -i);
+        if (dailyHoursMap[dt] !== undefined) {
+          sum30 += dailyHoursMap[dt];
+          count30++;
+        }
+      }
+      const avg30 = count30 > 0 ? (sum30 / count30) : 10;
+
+      const rowsToShow = [];
+
+      for (const row of dongs) {
+        if (row.is_khai_bao) continue;
+        if (row.ngay_sinh > viewDate) continue;
+
+        const isClosedBeforeOrOnX = row.ngay_dong && row.ngay_dong <= viewDate;
+        if (isClosedBeforeOrOnX) continue;
+
+        const conLai = row.moc - H_X;
+        let mau = 'TRẮNG';
+        let statusText = 'Bình thường';
+
+        if (conLai <= 0) {
+          mau = 'ĐỎ';
+          statusText = 'Đến hạn / Quá hạn';
+        } else if (conLai <= row.gio_cb) {
+          mau = 'VÀNG';
+          statusText = 'Cảnh báo trước';
+        } else {
+          mau = 'TRẮNG';
+          statusText = 'Chưa đến hạn';
+        }
+
+        let duBaoNgay = '—';
+        if (conLai > 0) {
+          const daysNeeded = Math.ceil(conLai / (avg30 > 0 ? avg30 : 1));
+          duBaoNgay = addDays(viewDate, daysNeeded);
+        } else {
+          duBaoNgay = row.ngay_den_han || viewDate;
+        }
+
+        rowsToShow.push({
+          ...row,
+          gio_hien_tai: H_X,
+          con_lai: conLai,
+          mau: mau,
+          tinh_trang: statusText,
+          du_bao_ngay: duBaoNgay
+        });
+      }
+
+      return { viewDate, H_X, activeDoan, rowsToShow, avg30 };
+    }
+
+    // ===================================================================
+    // D. KIỂM THỬ BẮT BUỘC TỰ ĐỘNG (BẢO ĐẢM PASS TOÀN DIỆN VỚI TC1 - TC6)
+    // ===================================================================
+
+    function chayKiemThuBatBuoc() {
+      const results = [];
+      const tc1Params = JSON.parse(JSON.stringify(TC1_PARAMS));
+      const res1 = tinhLai(tc1Params, '2026-12-30');
+
+      function assertDay(dateStr, expectedCap, expectedMoc, expectedH, expectedCon, expectedMau, testTitle) {
+        const report = baoCao(tc1Params, res1, dateStr);
+        const rows = report.rowsToShow;
+        let passed = false;
+        let note = '';
+
+        if (dateStr === '2026-11-08') {
+          const r900 = rows.find(r => String(r.ma_cap) === '900');
+          const r1200 = rows.find(r => String(r.ma_cap) === '1200');
+          passed = !!(r900 && r1200 && r900.mau === 'ĐỎ' && r1200.mau === 'TRẮNG' && Math.round(report.H_X) === 900);
+          note = `H=${report.H_X}h | Các dòng: ${rows.map(r => r.ma_cap + '(' + r.mau + ')').join(', ')}`;
+        } else if (dateStr === '2026-12-17') {
+          const r1200 = rows.find(r => String(r.ma_cap) === '1200');
+          const r300 = rows.find(r => String(r.ma_cap) === '300' && r.chu_ky === 2);
+          passed = !!(r1200 && r300 && r1200.mau === 'ĐỎ' && r300.mau === 'TRẮNG' && Math.round(report.H_X) === 1290);
+          note = `H=${report.H_X}h | 1200 còn ${r1200?.con_lai}h (${r1200?.mau}), 300-ck2 còn ${r300?.con_lai}h (${r300?.mau})`;
+        } else {
+          const matchRow = rows.find(r => String(r.ma_cap) === String(expectedCap));
+          if (!matchRow) {
+            passed = false;
+            note = `Không tìm thấy cấp ${expectedCap}`;
+          } else {
+            const hOk = Math.round(report.H_X) === Math.round(expectedH);
+            const conOk = Math.round(matchRow.con_lai) === Math.round(expectedCon);
+            const mauOk = matchRow.mau === expectedMau;
+            passed = hOk && conOk && mauOk;
+            note = `Cấp ${matchRow.ma_cap} | H=${report.H_X}h | Còn=${matchRow.con_lai}h | Màu=${matchRow.mau}`;
+          }
+        }
+
+        results.push({
+          case: 'TC1',
+          name: testTitle,
+          expected: `Cấp ${expectedCap} | Mốc ${expectedMoc} | H=${expectedH} | Còn=${expectedCon} | ${expectedMau}`,
+          actual: note,
+          pass: passed
+        });
+      }
+
+      assertDay('2026-10-31', '900', 900, 820, 80, 'TRẮNG', '31/10: Cấp 900 chưa đến hạn (Trắng)');
+      assertDay('2026-11-05', '900', 900, 870, 30, 'VÀNG', '05/11: Cấp 900 vào vùng báo trước (Vàng)');
+      assertDay('2026-11-08', '900+1200', '900/1200', 900, '0/300', 'ĐỎ/TRẮNG', '08/11: 900 đến hạn (ĐỎ), sinh 1200 (TRẮNG)');
+      assertDay('2026-11-10', '1200', 1200, 920, 280, 'TRẮNG', '10/11: Phiếu TH001 đóng 900, chỉ còn 1200 (Trắng)');
+      assertDay('2026-12-05', '1200', 1200, 1170, 30, 'VÀNG', '05/12: Cấp 1200 vào cảnh báo 30h (Vàng)');
+      assertDay('2026-12-17', '1200+300', '1200/1500', 1290, '-90/210', 'ĐỎ/TRẮNG', '17/12: 1200 quá hạn (ĐỎ), 300-ck2 mốc 1500 (TRẮNG)');
+      assertDay('2026-12-20', '300', 300, 20, 280, 'TRẮNG', '20/12: Đoạn mới sau SC lớn 18/12, cấp 300 giờ 20h (Trắng)');
+
+      const tc2Params = JSON.parse(JSON.stringify(TC1_PARAMS));
+      tc2Params.tham_so.cach_tinh_moc = 2;
+      const res2 = tinhLai(tc2Params, '2026-12-30');
+      const r1200_tc2 = res2.dongs.find(r => !r.is_khai_bao && String(r.ma_cap) === '1200');
+      const r300_tc2 = res2.dongs.find(r => !r.is_khai_bao && String(r.ma_cap) === '300' && r.chu_ky === 2);
+      const tc2Pass = (r1200_tc2 && r1200_tc2.moc === 1220 && r1200_tc2.ngay_den_han === '2026-12-10' && r300_tc2 && r300_tc2.moc === 1520);
+      results.push({
+        case: 'TC2',
+        name: 'Trượt: Mốc 1200 trượt thành 1220h, đến hạn 10/12, mốc 300-ck2 là 1520h',
+        expected: 'Mốc 1200 = 1220h, đến hạn 10/12; mốc 300-ck2 = 1520h',
+        actual: `1200 mốc=${r1200_tc2?.moc}h đến hạn ${r1200_tc2?.ngay_den_han}; 300-ck2 mốc=${r300_tc2?.moc}h`,
+        pass: !!tc2Pass
+      });
+
+      const tc3Params = JSON.parse(JSON.stringify(TC1_PARAMS));
+      tc3Params.phieu = [
+        { so_ct: 'TH002', loai: 'BD', ma_cap: '1200', ngay_ct: '2026-12-08', ngay_ra: '2026-12-09' }
+      ];
+      const res3 = tinhLai(tc3Params, '2026-12-30');
+      const r900_tc3 = res3.dongs.find(r => !r.is_khai_bao && String(r.ma_cap) === '900');
+      const r1200_tc3 = res3.dongs.find(r => !r.is_khai_bao && String(r.ma_cap) === '1200');
+      const tc3Pass = (r900_tc3 && r900_tc3.trang_thai === 2 && r1200_tc3 && r1200_tc3.trang_thai === 1 && Math.round(r1200_tc3.gio_luc_bd) === 1210);
+      results.push({
+        case: 'TC3',
+        name: 'Bao trùm: 900 đóng trạng thái 2; 1200 đã BD lúc 1210h',
+        expected: '900 trạng thái 2 (bao trùm); 1200 trạng thái 1 lúc 1210h',
+        actual: `900 status=${r900_tc3?.trang_thai}; 1200 status=${r1200_tc3?.trang_thai} lúc ${r1200_tc3?.gio_luc_bd}h`,
+        pass: !!tc3Pass
+      });
+
+      const tc4Params = JSON.parse(JSON.stringify(TC1_PARAMS));
+      tc4Params.phieu = [
+        { so_ct: 'TH003', loai: 'BD', ma_cap: '900', ngay_ct: '2026-11-02', ngay_ra: '2026-11-03' }
+      ];
+      const res4 = tinhLai(tc4Params, '2026-11-30');
+      const r900_tc4 = res4.dongs.find(r => !r.is_khai_bao && String(r.ma_cap) === '900');
+      const tc4Pass = (r900_tc4 && r900_tc4.trang_thai === 1 && r900_tc4.ngay_dong === '2026-11-03' && !r900_tc4.ngay_den_han && Math.round(r900_tc4.gio_luc_bd) === 850);
+      results.push({
+        case: 'TC4',
+        name: 'Làm sớm: 900 đóng 03/11 lúc 850h, ngày đến hạn trống',
+        expected: 'Đóng 03/11 lúc 850h, ngay_den_han = null',
+        actual: `Đóng=${r900_tc4?.ngay_dong}, giờ=${r900_tc4?.gio_luc_bd}h`,
+        pass: !!tc4Pass
+      });
+
+      const tc5Params = JSON.parse(JSON.stringify(TC1_PARAMS));
+      tc5Params.phieu = [
+        { so_ct: 'TH004', loai: 'BD', ma_cap: '300', ngay_ct: '2026-11-04', ngay_ra: '2026-11-05' }
+      ];
+      const res5 = tinhLai(tc5Params, '2026-11-30');
+      const logNgoai = res5.logs.find(l => l.loai === 'BD_NGOAI' && l.so_ct === 'TH004');
+      results.push({
+        case: 'TC5',
+        name: 'Ngoại lệ: Phiếu sai cấp 300 ngày 05/11 ghi nhận BD_NGOAI',
+        expected: 'Log BD_NGOAI cho phiếu TH004',
+        actual: logNgoai ? logNgoai.noi_dung : 'Không có log ngoại lệ',
+        pass: !!logNgoai
+      });
+
+      const tc6Params = JSON.parse(JSON.stringify(TC1_PARAMS));
+      tc6Params.phieu = [];
+      const res6 = tinhLai(tc6Params, '2026-11-15');
+      const rep6 = baoCao(tc6Params, res6, '2026-11-15');
+      const r900_tc6 = rep6.rowsToShow.find(r => String(r.ma_cap) === '900');
+      const r1200_tc6 = rep6.rowsToShow.find(r => String(r.ma_cap) === '1200');
+      const tc6Pass = (r900_tc6 && r900_tc6.mau === 'ĐỎ' && r1200_tc6 && r1200_tc6.mau === 'TRẮNG');
+      results.push({
+        case: 'TC6',
+        name: 'Không phiếu: 15/11 dòng 900 quá hạn (ĐỎ), 1200 mở chưa đến hạn (TRẮNG)',
+        expected: '900 ĐỎ, 1200 TRẮNG',
+        actual: `900: ${r900_tc6?.mau}, 1200: ${r1200_tc6?.mau}`,
+        pass: !!tc6Pass
+      });
+
+      return results;
+    }
+
+    // ===================================================================
+    // C. 3D SCENE & ANIMATION ENGINE (Three.js r128)
+    // ===================================================================
+
+    let scene, camera, renderer;
+    let craneGroup, wheelsGroup, boomGroup, cabinGroup, beaconMesh, wrenchMesh;
+    let cycleGroup, cycleRingMesh, needleGroup, milestonePillars = [];
+    let harborWater;
+    let cameraTarget = new THREE.Vector3(0, 3, 0);
+
+    let isDragging = false;
+    let dragButton = 0;
+    let previousMousePosition = { x: 0, y: 0 };
+    let cameraSpherical = { radius: 24, theta: Math.PI / 4, phi: Math.PI / 3 };
+    let targetSpherical = { radius: 24, theta: Math.PI / 4, phi: Math.PI / 3 };
+    let touchStartDist = 0;
+
+    function init3DScene() {
+      const container = document.getElementById('canvas-container');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0a101d);
+      scene.fog = new THREE.FogExp2(0x0a101d, 0.015);
+
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.5, 500);
+      updateCameraPosition();
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      const ambientLight = new THREE.AmbientLight(0xffeedd, 0.6);
+      scene.add(ambientLight);
+
+      const sunLight = new THREE.DirectionalLight(0xfb923c, 1.4);
+      sunLight.position.set(25, 30, 20);
+      sunLight.castShadow = true;
+      scene.add(sunLight);
+
+      const fillLight = new THREE.DirectionalLight(0x38bdf8, 0.45);
+      fillLight.position.set(-20, 15, -20);
+      scene.add(fillLight);
+
+      createPortEnvironment();
+      createEquipmentModel(currentParams.thiet_bi?.mo_hinh || 'cau_banh_lop');
+      createCycleRings();
+      setupControls(container);
+      window.addEventListener('resize', onWindowResize);
+    }
+
+    function createPortEnvironment() {
+      const pierGeo = new THREE.BoxGeometry(60, 2, 40);
+      const pierMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85, metalness: 0.1 });
+      const pier = new THREE.Mesh(pierGeo, pierMat);
+      pier.position.set(0, -1, 0);
+      pier.receiveShadow = true;
+      scene.add(pier);
+
+      const stripeGeo = new THREE.PlaneGeometry(60, 0.6);
+      const stripeMat = new THREE.MeshBasicMaterial({ color: 0xeab308, side: THREE.DoubleSide });
+      const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+      stripe.rotation.x = -Math.PI / 2;
+      stripe.position.set(0, 0.02, 19.5);
+      scene.add(stripe);
+
+      for (let x = -26; x <= 26; x += 13) {
+        const bollardGeo = new THREE.CylinderGeometry(0.3, 0.35, 0.8, 16);
+        const bollardMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8, roughness: 0.3 });
+        const b = new THREE.Mesh(bollardGeo, bollardMat);
+        b.position.set(x, 0.4, 19.2);
+        b.castShadow = true;
+        scene.add(b);
+      }
+
+      const waterGeo = new THREE.PlaneGeometry(160, 80, 32, 32);
+      const waterMat = new THREE.MeshStandardMaterial({
+        color: 0x0284c7,
+        roughness: 0.15,
+        metalness: 0.8,
+        transparent: true,
+        opacity: 0.85
+      });
+      harborWater = new THREE.Mesh(waterGeo, waterMat);
+      harborWater.rotation.x = -Math.PI / 2;
+      harborWater.position.set(0, -1.2, 50);
+      scene.add(harborWater);
+    }
+
+    function createEquipmentModel(type) {
+      if (craneGroup) scene.remove(craneGroup);
+      craneGroup = new THREE.Group();
+
+      const yellowMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4, metalness: 0.3 });
+      const darkMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7, metalness: 0.5 });
+      const glassMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.6 });
+
+      const chassisGeo = new THREE.BoxGeometry(4.4, 1.2, 8.8);
+      const chassis = new THREE.Mesh(chassisGeo, yellowMat);
+      chassis.position.set(0, 1.4, 0);
+      chassis.castShadow = true;
+      chassis.receiveShadow = true;
+      craneGroup.add(chassis);
+
+      for (let sx of [-2.4, 2.4]) {
+        for (let sz of [-3.2, 3.2]) {
+          const legGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+          const leg = new THREE.Mesh(legGeo, darkMat);
+          leg.position.set(sx, 0.4, sz);
+          craneGroup.add(leg);
+        }
+      }
+
+      wheelsGroup = new THREE.Group();
+      const wheelGeo = new THREE.CylinderGeometry(0.85, 0.85, 0.65, 18);
+      const tireMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+      const rimMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.7 });
+
+      const zPositions = [-2.8, -0.9, 0.9, 2.8];
+      for (let z of zPositions) {
+        for (let side of [-2.2, 2.2]) {
+          const wMesh = new THREE.Mesh(wheelGeo, tireMat);
+          wMesh.rotation.z = Math.PI / 2;
+          wMesh.position.set(side, 0.85, z);
+          wMesh.castShadow = true;
+
+          const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.68, 12), rimMat);
+          rim.rotation.z = Math.PI / 2;
+          rim.position.set(side, 0.85, z);
+          wheelsGroup.add(wMesh);
+          wheelsGroup.add(rim);
+        }
+      }
+      craneGroup.add(wheelsGroup);
+
+      cabinGroup = new THREE.Group();
+      cabinGroup.position.set(0, 2.0, 0);
+
+      const turntable = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.9, 0.4, 24), darkMat);
+      turntable.position.set(0, 0.2, 0);
+      cabinGroup.add(turntable);
+
+      const cabinGeo = new THREE.BoxGeometry(2.2, 2.2, 3.8);
+      const cabin = new THREE.Mesh(cabinGeo, yellowMat);
+      cabin.position.set(-0.8, 1.4, 0.4);
+      cabin.castShadow = true;
+      cabinGroup.add(cabin);
+
+      const windshield = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.2, 1.6), glassMat);
+      windshield.position.set(-0.8, 1.7, 1.6);
+      cabinGroup.add(windshield);
+
+      const counterWeight = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.8, 1.8), darkMat);
+      counterWeight.position.set(0, 1.2, -2.4);
+      counterWeight.castShadow = true;
+      cabinGroup.add(counterWeight);
+
+      const beaconGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.4, 12);
+      const beaconMat = new THREE.MeshStandardMaterial({
+        color: 0x22c55e,
+        emissive: 0x22c55e,
+        emissiveIntensity: 0.8
+      });
+      beaconMesh = new THREE.Mesh(beaconGeo, beaconMat);
+      beaconMesh.position.set(-0.8, 2.7, 0.4);
+      cabinGroup.add(beaconMesh);
+
+      boomGroup = new THREE.Group();
+      boomGroup.position.set(0.6, 1.6, -0.6);
+
+      const baseBoom = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.9, 10), yellowMat);
+      baseBoom.position.set(0, 0.4, 4.6);
+      baseBoom.castShadow = true;
+      boomGroup.add(baseBoom);
+
+      const innerBoom = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 8), darkMat);
+      innerBoom.position.set(0, 0.4, 10.5);
+      boomGroup.add(innerBoom);
+
+      const hook = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.08, 8, 16), darkMat);
+      hook.rotation.x = Math.PI / 2;
+      hook.position.set(0, -1.8, 14);
+      boomGroup.add(hook);
+
+      boomGroup.rotation.x = 0.35;
+      cabinGroup.add(boomGroup);
+      craneGroup.add(cabinGroup);
+
+      create3DWrench();
+      scene.add(craneGroup);
+    }
+
+    function create3DWrench() {
+      const wrenchGroup = new THREE.Group();
+      const metalMat = new THREE.MeshStandardMaterial({
+        color: 0x22c55e,
+        emissive: 0x15803d,
+        emissiveIntensity: 0.6,
+        metalness: 0.8,
+        roughness: 0.2
+      });
+
+      const handle = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.4, 0.2), metalMat);
+      wrenchGroup.add(handle);
+
+      const head1 = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.15, 8, 16, Math.PI * 1.5), metalMat);
+      head1.position.set(0, 1.2, 0);
+      head1.rotation.z = Math.PI / 4;
+      wrenchGroup.add(head1);
+
+      wrenchMesh = wrenchGroup;
+      wrenchMesh.position.set(0, 7.5, 0);
+      wrenchMesh.scale.set(0, 0, 0);
+      scene.add(wrenchMesh);
+    }
+
+    function createCycleRings() {
+      if (cycleGroup) scene.remove(cycleGroup);
+      cycleGroup = new THREE.Group();
+      milestonePillars = [];
+
+      const dinhMuc = (currentParams.dinh_muc || []).slice().sort((a, b) => a.stt - b.stt);
+      const C = dinhMuc.length > 0 ? Math.max(...dinhMuc.map(d => d.gio_dm)) : 1200;
+      const radius = 9.5;
+
+      const ringGeo = new THREE.TorusGeometry(radius, 0.18, 16, 100);
+      const ringMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.6 });
+      cycleRingMesh = new THREE.Mesh(ringGeo, ringMat);
+      cycleRingMesh.rotation.x = Math.PI / 2;
+      cycleRingMesh.position.set(0, 0.35, 0);
+      cycleGroup.add(cycleRingMesh);
+
+      for (const dm of dinhMuc) {
+        const vInfo = getCapVisualInfo(dm.ma_cap);
+        const angle = (dm.gio_dm / C) * Math.PI * 2;
+        const px = Math.sin(angle) * radius;
+        const pz = -Math.cos(angle) * radius;
+
+        const pillarHolder = new THREE.Group();
+        pillarHolder.position.set(px, 0.35, pz);
+
+        const pillar = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.35, 0.4, 1.6, 16),
+          new THREE.MeshStandardMaterial({ color: vInfo.colorHex, roughness: 0.3, metalness: 0.5, emissive: 0x0f172a })
+        );
+        pillar.position.set(0, 0.8, 0);
+        pillar.castShadow = true;
+        pillarHolder.add(pillar);
+
+        const orb = new THREE.Mesh(
+          new THREE.SphereGeometry(0.32, 16, 16),
+          new THREE.MeshStandardMaterial({ color: vInfo.colorHex, emissive: vInfo.colorHex, emissiveIntensity: 0.5 })
+        );
+        orb.position.set(0, 1.8, 0);
+        pillarHolder.add(orb);
+
+        const labelSprite = makeTextSprite(`${dm.ma_cap}h`, { fontsize: 26, accentColor: vInfo.colorHex });
+        labelSprite.position.set(0, 2.6, 0);
+        pillarHolder.add(labelSprite);
+
+        const warnAngleSpan = (dm.gio_cb / C) * Math.PI * 2;
+        const warnArc = new THREE.Mesh(
+          new THREE.RingGeometry(radius - 0.45, radius + 0.45, 24, 1, angle - warnAngleSpan, warnAngleSpan),
+          new THREE.MeshBasicMaterial({ color: 0xfef08a, side: THREE.DoubleSide, transparent: true, opacity: 0.45 })
+        );
+        warnArc.rotation.x = Math.PI / 2;
+        warnArc.position.set(0, 0.36, 0);
+        cycleGroup.add(warnArc);
+
+        pillarHolder.userData = {
+          ma_cap: dm.ma_cap,
+          gio_dm: dm.gio_dm,
+          pillarMesh: pillar,
+          orbMesh: orb,
+          visualInfo: vInfo,
+          basePos: new THREE.Vector3(px, 0.35, pz)
+        };
+
+        milestonePillars.push(pillarHolder);
+        cycleGroup.add(pillarHolder);
+      }
+
+      needleGroup = new THREE.Group();
+      const needleTip = new THREE.Mesh(
+        new THREE.ConeGeometry(0.35, 1.0, 16),
+        new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.8 })
+      );
+      needleTip.rotation.x = Math.PI / 2;
+      needleTip.position.set(0, 1.4, radius);
+      needleGroup.add(needleTip);
+
+      const needleRod = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.06, 0.06, radius, 8),
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.6 })
+      );
+      needleRod.rotation.x = Math.PI / 2;
+      needleRod.position.set(0, 0.4, radius / 2);
+      needleGroup.add(needleRod);
+
+      cycleGroup.add(needleGroup);
+      scene.add(cycleGroup);
+    }
+
+    function makeTextSprite(message, parameters) {
+      const fontface = parameters?.fontface || 'Inter, Arial, sans-serif';
+      const fontsize = parameters?.fontsize || 24;
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 128;
+      const context = canvas.getContext('2d');
+
+      context.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      if (context.roundRect) {
+        context.roundRect(10, 10, 236, 108, 16);
+      } else {
+        context.rect(10, 10, 236, 108);
+      }
+      context.fill();
+
+      context.strokeStyle = '#38bdf8';
+      context.lineWidth = 4;
+      if (context.roundRect) {
+        context.roundRect(10, 10, 236, 108, 16);
+      } else {
+        context.rect(10, 10, 236, 108);
+      }
+      context.stroke();
+
+      context.font = `bold ${fontsize}px ${fontface}`;
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillStyle = '#f8fafc';
+      context.fillText(message, 128, 64);
+
+      const texture = new THREE.Texture(canvas);
+      texture.needsUpdate = true;
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture }));
+      sprite.scale.set(2.4, 1.2, 1.0);
+      return sprite;
+    }
+
+    function update3DVisuals(reportData) {
+      if (!cycleRingMesh || !needleGroup) return;
+
+      const { H_X, rowsToShow } = reportData;
+      const dinhMuc = (currentParams.dinh_muc || []).slice().sort((a, b) => a.stt - b.stt);
+      const C = Math.max(...dinhMuc.map(d => d.gio_dm));
+
+      const currentCycle = Math.max(1, Math.floor(H_X / C) + 1);
+      const hoursInCycle = H_X % C;
+
+      const targetAngle = (hoursInCycle / C) * Math.PI * 2;
+      needleGroup.rotation.y = -targetAngle;
+
+      const targetY = (currentCycle - 1) * 1.8;
+      cycleGroup.position.y = THREE.MathUtils.lerp(cycleGroup.position.y, targetY, 0.08);
+
+      for (const pillarHolder of milestonePillars) {
+        const maCap = pillarHolder.userData.ma_cap;
+        const orb = pillarHolder.userData.orbMesh;
+        const pillar = pillarHolder.userData.pillarMesh;
+
+        const activeRow = rowsToShow.find(r => String(r.ma_cap) === String(maCap));
+
+        if (activeRow) {
+          if (activeRow.mau === 'ĐỎ') {
+            orb.material.color.setHex(0xef4444);
+            orb.material.emissive.setHex(0xef4444);
+            orb.material.emissiveIntensity = 1.0;
+            pillar.material.color.setHex(0xef4444);
+            pillarHolder.position.x = pillarHolder.userData.basePos.x + (Math.random() - 0.5) * 0.05;
+          } else if (activeRow.mau === 'VÀNG') {
+            orb.material.color.setHex(0xeab308);
+            orb.material.emissive.setHex(0xeab308);
+            orb.material.emissiveIntensity = 0.8;
+            pillar.material.color.setHex(0xeab308);
+            pillarHolder.position.x = pillarHolder.userData.basePos.x;
+          } else {
+            orb.material.color.setHex(0xffffff);
+            orb.material.emissive.setHex(0x94a3b8);
+            orb.material.emissiveIntensity = 0.4;
+            pillar.material.color.setHex(0xffffff);
+            pillarHolder.position.x = pillarHolder.userData.basePos.x;
+          }
+        } else {
+          const pastRow = engineCache.dongs.find(r => String(r.ma_cap) === String(maCap) && r.ngay_sinh <= reportData.viewDate && r.ngay_dong && r.ngay_dong <= reportData.viewDate);
+          if (pastRow) {
+            if (pastRow.trang_thai === 1) {
+              orb.material.color.setHex(0x22c55e);
+              orb.material.emissive.setHex(0x22c55e);
+              orb.material.emissiveIntensity = 0.8;
+              pillar.material.color.setHex(0x16a34a);
+            } else if (pastRow.trang_thai === 2) {
+              orb.material.color.setHex(0x86efac);
+              orb.material.emissive.setHex(0x22c55e);
+              orb.material.emissiveIntensity = 0.5;
+              pillar.material.color.setHex(0x4ade80);
+            } else {
+              orb.material.color.setHex(0x64748b);
+              orb.material.emissive.setHex(0x1e293b);
+              orb.material.emissiveIntensity = 0.2;
+              pillar.material.color.setHex(0x475569);
+            }
+          } else {
+            orb.material.color.setHex(0xffffff);
+            orb.material.emissive.setHex(0x94a3b8);
+            orb.material.emissiveIntensity = 0.4;
+            pillar.material.color.setHex(0xffffff);
+          }
+          pillarHolder.position.x = pillarHolder.userData.basePos.x;
+        }
+      }
+
+      const hasRed = rowsToShow.some(r => r.mau === 'ĐỎ');
+      const hasYellow = rowsToShow.some(r => r.mau === 'VÀNG');
+
+      if (beaconMesh) {
+        if (hasRed) {
+          beaconMesh.material.color.setHex(0xef4444);
+          beaconMesh.material.emissive.setHex(0xef4444);
+          beaconMesh.material.emissiveIntensity = (Math.sin(Date.now() * 0.015) > 0) ? 1.5 : 0.2;
+        } else if (hasYellow) {
+          beaconMesh.material.color.setHex(0xeab308);
+          beaconMesh.material.emissive.setHex(0xeab308);
+          beaconMesh.material.emissiveIntensity = (Math.sin(Date.now() * 0.005) > 0) ? 1.0 : 0.3;
+        } else {
+          beaconMesh.material.color.setHex(0x22c55e);
+          beaconMesh.material.emissive.setHex(0x22c55e);
+          beaconMesh.material.emissiveIntensity = 0.6;
+        }
+      }
+
+      checkEventToasts(reportData);
+
+      // KIỂM TRA ĐIỀU KIỆN DỪNG VÀ HỎI NSD BẢO DƯỠNG (WORKFLOW INTERACTIVE POPUP)
+      checkWorkflowPrompt(reportData);
+    }
+
+    /**
+     * KIỂM TRA ĐIỀU KIỆN TỰ DỪNG VÀ HỎI NSD BẢO DƯỠNG
+     */
+    function checkWorkflowPrompt(reportData) {
+      const autoPromptEnabled = document.getElementById('chk-auto-prompt').checked;
+      if (!autoPromptEnabled) return;
+      if (!isPlaying) return; // Chỉ tự dừng khi đang chạy
+
+      const { viewDate, rowsToShow } = reportData;
+
+      // Tìm dòng sắp đến hạn (Vàng) hoặc vừa đến hạn (Đỏ) mà chưa được duyệt
+      const candidateRow = rowsToShow.find(r => (r.mau === 'VÀNG' || r.mau === 'ĐỎ') && r.trang_thai === 0);
+      if (!candidateRow) return;
+
+      const promptKey = `${candidateRow.id}_${candidateRow.ma_cap}_${candidateRow.chu_ky}`;
+      if (promptedRowsSet.has(promptKey)) return;
+
+      // Đạt điều kiện: TẠM DỪNG VÀ BẬT MODAL HỎI
+      setPlaying(false);
+      promptedRowsSet.add(promptKey);
+      currentPendingPromptRow = candidateRow;
+
+      // Cập nhật thông tin vào Modal
+      document.getElementById('modal-tb-info').textContent = `${currentParams.thiet_bi?.ma_tb} - ${currentParams.thiet_bi?.ten_tb}`;
+      document.getElementById('modal-cap-info').textContent = `Cấp ${candidateRow.ma_cap}h (Mốc: ${formatNumber(candidateRow.moc, 0)} h)`;
+      document.getElementById('modal-date-info').textContent = formatVNDate(viewDate);
+      document.getElementById('modal-hours-info').textContent = `${formatNumber(reportData.H_X)} h (Còn lại: ${formatNumber(candidateRow.con_lai)} h)`;
+
+      // Tính lead time dựa trên định mức KT01
+      const dm = currentParams.dinh_muc.find(d => String(d.ma_cap) === String(candidateRow.ma_cap));
+      const leadHours = dm?.hours_lead || (candidateRow.gio_dm >= 1200 ? 36 : (candidateRow.gio_dm >= 600 ? 24 : 12));
+      const leadDays = Math.ceil(leadHours / 12);
+      document.getElementById('modal-lead-time').textContent = `${leadHours} giờ làm việc (~${leadDays} ngày ra xưởng)`;
+
+      // Đề xuất mã chứng từ & ngày ra tự động
+      document.getElementById('modal-input-so-ct').value = `TH0${Math.floor(Math.random() * 800 + 100)}/BB-XNSCCK`;
+      document.getElementById('modal-input-ngay-ra').value = addDays(viewDate, leadDays);
+
+      // Hiển thị modal
+      document.getElementById('modal-interactive-ticket').classList.remove('hidden');
+    }
+
+    let lastToastKey = '';
+    function checkEventToasts(reportData) {
+      const { viewDate } = reportData;
+      const todayLogs = engineCache.logs.filter(l => l.ngay === viewDate);
+
+      for (const log of todayLogs) {
+        const key = `${viewDate}_${log.so_ct || ''}_${log.loai}`;
+        if (lastToastKey === key) continue;
+        lastToastKey = key;
+
+        let bgClass = 'bg-sky-900/90 text-sky-200 border-sky-600';
+        let icon = '🔔';
+        if (log.loai === 'BD_XONG') {
+          bgClass = 'bg-emerald-900/90 text-emerald-200 border-emerald-500 badge-glow-green';
+          icon = '🔧';
+          if (wrenchMesh) {
+            wrenchMesh.scale.set(1.4, 1.4, 1.4);
+            wrenchMesh.rotation.y = 0;
+          }
+        } else if (log.loai === 'RESET_SC') {
+          bgClass = 'bg-rose-900/90 text-rose-200 border-rose-500 badge-glow-red';
+          icon = '🏭';
+        } else if (log.loai === 'BD_NGOAI') {
+          bgClass = 'bg-amber-900/90 text-amber-200 border-amber-500 badge-glow-yellow';
+          icon = '⚠️';
+        }
+        showToast(icon, log.noi_dung, bgClass);
+      }
+    }
+
+    function showToast(icon, message, styleClass) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `flex items-center gap-2.5 px-4 py-2.5 rounded-xl border backdrop-blur-md shadow-2xl text-xs font-semibold transform transition-all duration-300 opacity-0 translate-y-2 ${styleClass}`;
+      toast.innerHTML = `<span class="text-base">${icon}</span> <span>${message}</span>`;
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => toast.classList.remove('opacity-0', 'translate-y-2'));
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function animate(time) {
+      requestAnimationFrame(animate);
+
+      cameraSpherical.radius = THREE.MathUtils.lerp(cameraSpherical.radius, targetSpherical.radius, 0.08);
+      cameraSpherical.theta = THREE.MathUtils.lerp(cameraSpherical.theta, targetSpherical.theta, 0.08);
+      cameraSpherical.phi = THREE.MathUtils.lerp(cameraSpherical.phi, targetSpherical.phi, 0.08);
+      updateCameraPosition();
+
+      if (isPlaying && craneGroup) {
+        if (wheelsGroup) {
+          wheelsGroup.children.forEach(w => {
+            if (w.geometry.type === 'CylinderGeometry') w.rotation.x += 0.04;
+          });
+        }
+        if (boomGroup) boomGroup.rotation.x = 0.35 + Math.sin(time * 0.002) * 0.06;
+        if (cabinGroup) cabinGroup.rotation.y = Math.sin(time * 0.001) * 0.15;
+      }
+
+      if (wrenchMesh && wrenchMesh.scale.x > 0.05) {
+        wrenchMesh.rotation.y += 0.05;
+        wrenchMesh.scale.multiplyScalar(0.985);
+      }
+
+      if (harborWater) {
+        harborWater.position.y = -1.2 + Math.sin(time * 0.0015) * 0.04;
+      }
+
+      if (isPlaying) {
+        if (!lastAnimTimestamp) lastAnimTimestamp = time;
+        const delta = (time - lastAnimTimestamp) / 1000;
+        lastAnimTimestamp = time;
+        accumTime += delta;
+
+        const interval = 1.0 / playSpeed;
+        if (accumTime >= interval) {
+          const steps = Math.floor(accumTime / interval);
+          accumTime -= steps * interval;
+          currentDayIndex = Math.min(simDates.length - 1, currentDayIndex + steps);
+          syncViewToCurrentDay();
+
+          if (currentDayIndex >= simDates.length - 1) {
+            setPlaying(false);
+          }
+        }
+      } else {
+        lastAnimTimestamp = null;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    function setupControls(element) {
+      element.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        dragButton = e.button;
+        previousMousePosition = { x: e.clientX, y: e.clientY };
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const deltaX = e.clientX - previousMousePosition.x;
+        const deltaY = e.clientY - previousMousePosition.y;
+
+        if (dragButton === 0) {
+          targetSpherical.theta -= deltaX * 0.008;
+          targetSpherical.phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, targetSpherical.phi - deltaY * 0.008));
+        } else if (dragButton === 2) {
+          const panSpeed = 0.03;
+          cameraTarget.x -= deltaX * panSpeed;
+          cameraTarget.z -= deltaY * panSpeed;
+        }
+
+        previousMousePosition = { x: e.clientX, y: e.clientY };
+      });
+
+      window.addEventListener('mouseup', () => { isDragging = false; });
+      element.addEventListener('contextmenu', e => e.preventDefault());
+
+      element.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        targetSpherical.radius = Math.max(8, Math.min(60, targetSpherical.radius + e.deltaY * 0.025));
+      }, { passive: false });
+
+      element.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          isDragging = true;
+          previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        } else if (e.touches.length === 2) {
+          touchStartDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+        }
+      }, { passive: true });
+
+      element.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1 && isDragging) {
+          const deltaX = e.touches[0].clientX - previousMousePosition.x;
+          const deltaY = e.touches[0].clientY - previousMousePosition.y;
+
+          targetSpherical.theta -= deltaX * 0.009;
+          targetSpherical.phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, targetSpherical.phi - deltaY * 0.009));
+
+          previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        } else if (e.touches.length === 2) {
+          const dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          const factor = touchStartDist / (dist || 1);
+          targetSpherical.radius = Math.max(8, Math.min(60, targetSpherical.radius * (1 + (factor - 1) * 0.05)));
+          touchStartDist = dist;
+        }
+      }, { passive: true });
+
+      element.addEventListener('touchend', () => { isDragging = false; });
+    }
+
+    function updateCameraPosition() {
+      const x = cameraTarget.x + cameraSpherical.radius * Math.sin(cameraSpherical.phi) * Math.sin(cameraSpherical.theta);
+      const y = cameraTarget.y + cameraSpherical.radius * Math.cos(cameraSpherical.phi);
+      const z = cameraTarget.z + cameraSpherical.radius * Math.sin(cameraSpherical.phi) * Math.cos(cameraSpherical.theta);
+      camera.position.set(x, y, z);
+      camera.lookAt(cameraTarget);
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('canvas-container');
+      if (!container || !renderer || !camera) return;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    }
+
+    function flyCameraTo(targetPos, distance = 16) {
+      cameraTarget = targetPos.clone();
+      targetSpherical.radius = distance;
+    }
+
+    // ===================================================================
+    // UI & STATE SYNCHRONIZATION
+    // ===================================================================
+
+    function initTimelineDates() {
+      const tuNgay = currentParams.demo?.tu_ngay || '2026-10-31';
+      const denNgay = currentParams.demo?.den_ngay || '2026-12-30';
+      const total = diffDays(tuNgay, denNgay);
+
+      simDates = [];
+      for (let i = 0; i <= total; i++) {
+        simDates.push(addDays(tuNgay, i));
+      }
+
+      const slider = document.getElementById('timeline-slider');
+      slider.min = 0;
+      slider.max = simDates.length - 1;
+      slider.value = 0;
+      currentDayIndex = 0;
+
+      renderTimelineMarkers();
+    }
+
+    function renderTimelineMarkers() {
+      const container = document.getElementById('timeline-markers');
+      container.innerHTML = '';
+      const totalDays = simDates.length - 1;
+      if (totalDays <= 0) return;
+
+      const phieuList = currentParams.phieu || [];
+      for (const p of phieuList) {
+        const markDate = p.ngay_ra || p.ngay_ct;
+        const idx = simDates.indexOf(markDate);
+        if (idx !== -1) {
+          const pct = (idx / totalDays) * 100;
+          const marker = document.createElement('div');
+          marker.className = 'absolute -top-3 transform -translate-x-1/2 flex flex-col items-center cursor-pointer group';
+          marker.style.left = `${pct}%`;
+          const isBD = p.loai === 'BD';
+          marker.innerHTML = `
+            <div class="w-2.5 h-2.5 rounded-full ${isBD ? 'bg-emerald-400' : 'bg-rose-500'} ring-2 ring-slate-900 shadow"></div>
+            <span class="opacity-0 group-hover:opacity-100 transition absolute bottom-3 bg-slate-900 border border-slate-700 text-[10px] px-1.5 py-0.5 rounded text-white whitespace-nowrap z-30">
+              ${p.so_ct} (${p.ma_cap})
+            </span>
+          `;
+          marker.addEventListener('click', () => {
+            currentDayIndex = idx;
+            syncViewToCurrentDay();
+          });
+          container.appendChild(marker);
+        }
+      }
+    }
+
+    function recalculateAll() {
+      const denNgay = currentParams.demo?.den_ngay || '2026-12-30';
+      engineCache = tinhLai(currentParams, denNgay);
+
+      // Cập nhật thông tin Header HUD
+      document.getElementById('hud-tb-code').textContent = currentParams.thiet_bi?.ma_tb || 'TB0012';
+      document.getElementById('hud-tb-name').textContent = currentParams.thiet_bi?.ten_tb || 'Cẩu bánh lốp KATO 25T';
+
+      // Cập nhật Badges
+      const isCoDinh = currentParams.tham_so?.cach_tinh_moc === 1;
+      document.getElementById('param-mode-badge').textContent = `Mốc: ${isCoDinh ? 'Cố định' : 'Trượt'}`;
+      document.getElementById('wrap-mode-badge').textContent = `Bao trùm: ${currentParams.tham_so?.bao_trum ? 'BẬT' : 'TẮT'}`;
+
+      // Đồng bộ vào Form trực quan
+      syncParamsToForm();
+
+      initTimelineDates();
+      syncViewToCurrentDay();
+      createCycleRings();
+    }
+
+    function syncParamsToForm() {
+      // Thiết bị
+      const tbKey = `${currentParams.thiet_bi?.ma_tb}|${currentParams.thiet_bi?.ten_tb}|${currentParams.thiet_bi?.mo_hinh}`;
+      const tbSelect = document.getElementById('form-tb-select');
+      for (let opt of tbSelect.options) {
+        if (opt.value.startsWith(currentParams.thiet_bi?.ma_tb)) {
+          tbSelect.value = opt.value;
+          break;
+        }
+      }
+      document.getElementById('form-ma-tb').value = currentParams.thiet_bi?.ma_tb || 'TB0012';
+
+      // Mốc khai báo
+      document.getElementById('form-ngay-moc').value = currentParams.moc_khai_bao?.ngay_moc || '2026-10-31';
+      document.getElementById('form-gio-moc').value = currentParams.moc_khai_bao?.gio_moc ?? 820;
+      document.getElementById('form-cap-gn').value = currentParams.moc_khai_bao?.ma_cap_gn || '600';
+
+      // Tham số
+      const cachTinhMoc = currentParams.tham_so?.cach_tinh_moc ?? 1;
+      document.querySelector(`input[name="form-cach-tinh-moc"][value="${cachTinhMoc}"]`).checked = true;
+      document.getElementById('form-lap-chu-ky').checked = !!currentParams.tham_so?.lap_chu_ky;
+      document.getElementById('form-bao-trum').checked = !!currentParams.tham_so?.bao_trum;
+      document.getElementById('form-ngay-reset').value = currentParams.tham_so?.ngay_reset ?? 1;
+
+      // Giờ hoạt động
+      const dailyHours = convertToHours(currentParams.gio_hoat_dong?.so_luong_moi_ngay ?? 600, currentParams.gio_hoat_dong?.dvt_nhap);
+      document.getElementById('form-gio-slider').value = dailyHours;
+      document.getElementById('form-gio-display').textContent = `${dailyHours.toFixed(1)} h/ngày (${Math.round(dailyHours * 60)} ph)`;
+    }
+
+    function readParamsFromForm() {
+      const tbVal = document.getElementById('form-tb-select').value.split('|');
+      currentParams.thiet_bi = {
+        ma_tb: document.getElementById('form-ma-tb').value || tbVal[0],
+        ten_tb: tbVal[1],
+        mo_hinh: tbVal[2]
+      };
+
+      currentParams.moc_khai_bao.ngay_moc = document.getElementById('form-ngay-moc').value;
+      currentParams.moc_khai_bao.gio_moc = parseFloat(document.getElementById('form-gio-moc').value) || 0;
+      currentParams.moc_khai_bao.ma_cap_gn = document.getElementById('form-cap-gn').value;
+
+      const checkedCalc = document.querySelector('input[name="form-cach-tinh-moc"]:checked')?.value;
+      currentParams.tham_so.cach_tinh_moc = parseInt(checkedCalc, 10) || 1;
+      currentParams.tham_so.lap_chu_ky = document.getElementById('form-lap-chu-ky').checked;
+      currentParams.tham_so.bao_trum = document.getElementById('form-bao-trum').checked;
+      currentParams.tham_so.ngay_reset = parseInt(document.getElementById('form-ngay-reset').value, 10) || 1;
+
+      const hoursDaily = parseFloat(document.getElementById('form-gio-slider').value);
+      currentParams.gio_hoat_dong.dvt_nhap = 'PHUT';
+      currentParams.gio_hoat_dong.so_luong_moi_ngay = hoursDaily * 60;
+    }
+
+    function syncViewToCurrentDay() {
+      if (simDates.length === 0) return;
+      const viewDate = simDates[currentDayIndex];
+      const slider = document.getElementById('timeline-slider');
+      slider.value = currentDayIndex;
+
+      const report = baoCao(currentParams, engineCache, viewDate);
+
+      document.getElementById('hud-date').textContent = formatVNDate(viewDate);
+      document.getElementById('timeline-current-date').textContent = formatVNDate(viewDate);
+      document.getElementById('table-active-date').textContent = formatVNDate(viewDate);
+
+      document.getElementById('hud-total-hours').textContent = `${formatNumber(report.H_X)} h`;
+      document.getElementById('timeline-current-hours').textContent = `${formatNumber(report.H_X)} h`;
+
+      const firstDue = report.rowsToShow[0];
+      const ledEl = document.getElementById('hud-led-text');
+      if (firstDue) {
+        const conStr = firstDue.con_lai <= 0
+          ? `Quá ${formatNumber(Math.abs(firstDue.con_lai), 0)} h`
+          : `Còn ${formatNumber(firstDue.con_lai, 0)} h`;
+        ledEl.textContent = `H = ${formatNumber(report.H_X)} h | ${conStr} → Cấp ${firstDue.ma_cap}`;
+      } else {
+        ledEl.textContent = `H = ${formatNumber(report.H_X)} h | Chu kỳ bình thường`;
+      }
+
+      update3DVisuals(report);
+      renderAlertsTable(report);
+      renderAllRowsTable(engineCache.dongs, viewDate);
+      renderLogs(engineCache.logs, viewDate);
+    }
+
+    function renderAlertsTable(report) {
+      const tbody = document.getElementById('tbody-alerts');
+      tbody.innerHTML = '';
+      document.getElementById('count-active-alerts').textContent = report.rowsToShow.length;
+
+      if (report.rowsToShow.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-slate-500 italic">Không có dòng cảnh báo nào đang mở tại ngày này</td></tr>`;
+        return;
+      }
+
+      const dinhMuc = (currentParams.dinh_muc || []).slice().sort((a, b) => a.stt - b.stt);
+      const C = Math.max(...dinhMuc.map(d => d.gio_dm)) || 1200;
+
+      // Phân nhóm theo Chu kỳ
+      const rowsByCycle = {};
+      for (const row of report.rowsToShow) {
+        const ck = row.chu_ky || 1;
+        if (!rowsByCycle[ck]) rowsByCycle[ck] = [];
+        rowsByCycle[ck].push(row);
+      }
+
+      const cycleKeys = Object.keys(rowsByCycle).map(Number).sort((a, b) => a - b);
+
+      for (const ck of cycleKeys) {
+        const cycleRows = rowsByCycle[ck];
+        const startH = (ck - 1) * C;
+        const endH = ck * C;
+        const cycleProgress = Math.min(100, Math.max(0, Math.round(((report.H_X - startH) / C) * 100)));
+
+        // Header phân nhóm chu kỳ
+        const cycleHeaderTr = document.createElement('tr');
+        cycleHeaderTr.className = 'bg-slate-800/90 border-y border-slate-700/80';
+        cycleHeaderTr.innerHTML = `
+          <td colspan="9" class="py-2.5 px-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2.5">
+                <span class="w-3 h-3 rounded-full bg-sky-400 shadow-sm shadow-sky-400"></span>
+                <span class="font-bold text-white text-xs uppercase tracking-wide">
+                  CHU KỲ ${ck} (${formatNumber(startH, 0)}h → ${formatNumber(endH, 0)}h)
+                </span>
+                <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-700">
+                  Đoạn ${report.activeDoan?.id || 1}
+                </span>
+              </div>
+              <div class="flex items-center gap-2.5 text-[11px]">
+                <span class="text-slate-400">Tiến độ chu kỳ:</span>
+                <div class="w-28 bg-slate-700/80 h-2.5 rounded-full overflow-hidden p-0.5 border border-slate-600">
+                  <div class="bg-gradient-to-r from-sky-500 via-indigo-500 to-amber-400 h-full rounded-full transition-all duration-300" style="width: ${cycleProgress}%"></div>
+                </div>
+                <span class="font-mono font-bold text-amber-300">${cycleProgress}%</span>
+              </div>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(cycleHeaderTr);
+
+        // Các dòng cấp giờ trong chu kỳ
+        for (const row of cycleRows) {
+          const vInfo = getCapVisualInfo(row.ma_cap);
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-slate-800/60 transition cursor-pointer group';
+
+          // Tính % tiến độ của cấp này
+          const prevMoc = row.stt > 1 ? dinhMuc[row.stt - 2].gio_dm : 0;
+          const spanHours = row.gio_dm - prevMoc;
+          const hFromPrev = Math.max(0, report.H_X - ((row.chu_ky - 1) * C + prevMoc));
+          const pctLevel = Math.min(100, Math.max(0, Math.round((hFromPrev / (spanHours || 1)) * 100)));
+
+          let barColorClass = vInfo.barGradient;
+          if (row.mau === 'ĐỎ') barColorClass = 'from-rose-600 to-rose-400 animate-pulse';
+          else if (row.mau === 'VÀNG') barColorClass = 'from-amber-600 to-amber-400';
+
+          let statusBadge = '<span class="px-2 py-0.5 rounded text-[11px] bg-slate-800 text-slate-300 border border-slate-700">Chưa đến hạn</span>';
+          if (row.mau === 'ĐỎ') {
+            statusBadge = `<span class="px-2 py-0.5 rounded text-[11px] bg-rose-950 text-rose-300 border border-rose-600 font-bold badge-glow-red">Đến hạn / Quá</span>`;
+          } else if (row.mau === 'VÀNG') {
+            statusBadge = `<span class="px-2 py-0.5 rounded text-[11px] bg-amber-950 text-amber-300 border border-amber-600 font-bold badge-glow-yellow">Báo trước (≤ 30h)</span>`;
+          }
+
+          const conLaiDisplay = row.con_lai <= 0
+            ? `<span class="text-rose-400 font-bold font-mono">Quá ${formatNumber(Math.abs(row.con_lai), 1)} h</span>`
+            : `<span class="text-slate-300 font-mono">Còn ${formatNumber(row.con_lai, 1)} h</span>`;
+
+          tr.innerHTML = `
+            <td class="py-2.5 px-3">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 rounded-lg border font-mono font-bold text-xs flex items-center gap-1.5 ${vInfo.badgeClass}">
+                  <span>${vInfo.icon}</span> <span>${vInfo.name}</span>
+                </span>
+                <span class="text-[10px] text-slate-400 hidden sm:inline">${vInfo.desc}</span>
+              </div>
+            </td>
+            <td class="py-2.5 px-3 text-right font-mono font-bold text-slate-200 text-xs sm:text-sm">${formatNumber(row.moc, 0)} h</td>
+            <td class="py-2.5 px-3 text-right font-mono font-bold text-amber-400 text-xs sm:text-sm">${formatNumber(row.gio_hien_tai)} h</td>
+            <td class="py-2.5 px-3">
+              <div class="flex flex-col gap-1">
+                <div class="flex justify-between text-[10px] font-mono text-slate-400">
+                  <span>${formatNumber(report.H_X)} / ${formatNumber(row.moc, 0)} h</span>
+                  <span class="font-bold ${row.mau === 'ĐỎ' ? 'text-rose-400' : 'text-slate-300'}">${pctLevel}%</span>
+                </div>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700">
+                  <div class="h-full rounded-full bg-gradient-to-r ${barColorClass}" style="width: ${pctLevel}%"></div>
+                </div>
+              </div>
+            </td>
+            <td class="py-2.5 px-3 text-right">${conLaiDisplay}</td>
+            <td class="py-2.5 px-3 text-center font-mono text-slate-300">${formatVNDate(row.ngay_den_han)}</td>
+            <td class="py-2.5 px-3 text-center font-mono text-slate-400">${formatVNDate(row.du_bao_ngay)}</td>
+            <td class="py-2.5 px-3 text-center">${statusBadge}</td>
+            <td class="py-2.5 px-3 text-center">
+              <button class="btn-row-action px-2.5 py-1 rounded-lg text-xs font-semibold ${row.mau !== 'TRẮNG' ? 'bg-sky-600 hover:bg-sky-500 text-white shadow-sm' : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700'}" data-row-id="${row.id}">
+                ${row.mau !== 'TRẮNG' ? '📝 Duyệt BD' : '🔍 Xem'}
+              </button>
+            </td>
+          `;
+
+          // Gắn sự kiện click dòng → bay camera
+          tr.addEventListener('click', (e) => {
+            if (e.target.closest('.btn-row-action')) return;
+            const pillar = milestonePillars.find(p => String(p.userData.ma_cap) === String(row.ma_cap));
+            if (pillar) flyCameraTo(pillar.userData.basePos, 14);
+          });
+
+          // Gắn sự kiện nút thao tác nhanh trên dòng
+          const btnAction = tr.querySelector('.btn-row-action');
+          btnAction.addEventListener('click', () => {
+            currentPendingPromptRow = row;
+            document.getElementById('modal-tb-info').textContent = `${currentParams.thiet_bi?.ma_tb} - ${currentParams.thiet_bi?.ten_tb}`;
+            document.getElementById('modal-cap-info').textContent = `Cấp ${row.ma_cap}h (Mốc: ${formatNumber(row.moc, 0)} h)`;
+            document.getElementById('modal-date-info').textContent = formatVNDate(report.viewDate);
+            document.getElementById('modal-hours-info').textContent = `${formatNumber(report.H_X)} h (${row.con_lai <= 0 ? 'Quá ' + Math.abs(row.con_lai) + 'h' : 'Còn ' + row.con_lai + 'h'})`;
+
+            const dm = currentParams.dinh_muc.find(d => String(d.ma_cap) === String(row.ma_cap));
+            const leadHours = dm?.hours_lead || 24;
+            const leadDays = Math.ceil(leadHours / 12);
+            document.getElementById('modal-lead-time').textContent = `${leadHours} giờ làm việc (~${leadDays} ngày ra xưởng)`;
+            document.getElementById('modal-input-so-ct').value = `TH0${Math.floor(Math.random() * 800 + 100)}/BB-XNSCCK`;
+            document.getElementById('modal-input-ngay-ra').value = addDays(report.viewDate, leadDays);
+
+            document.getElementById('modal-interactive-ticket').classList.remove('hidden');
+          });
+
+          tbody.appendChild(tr);
+        }
+      }
+    }
+
+    function renderAllRowsTable(allRows, viewDate) {
+      const tbody = document.getElementById('tbody-all-rows');
+      tbody.innerHTML = '';
+      document.getElementById('count-all-rows').textContent = allRows.length;
+
+      // Nhóm theo Chu kỳ
+      const rowsByCycle = {};
+      for (const row of allRows) {
+        const ck = row.chu_ky || 1;
+        if (!rowsByCycle[ck]) rowsByCycle[ck] = [];
+        rowsByCycle[ck].push(row);
+      }
+
+      for (const ck of Object.keys(rowsByCycle).sort((a, b) => a - b)) {
+        const cycleRows = rowsByCycle[ck];
+
+        const headerTr = document.createElement('tr');
+        headerTr.className = 'bg-slate-800/80 border-y border-slate-700/80 text-xs font-bold text-slate-300';
+        headerTr.innerHTML = `
+          <td colspan="9" class="py-2 px-3">
+            <span class="text-sky-400 uppercase font-mono">━━ CHU KỲ ${ck} (Đoạn ${cycleRows[0]?.doan_id || 1}) ━━</span>
+          </td>
+        `;
+        tbody.appendChild(headerTr);
+
+        for (const row of cycleRows) {
+          const vInfo = getCapVisualInfo(row.ma_cap);
+          const tr = document.createElement('tr');
+          const isActiveToday = (row.ngay_sinh <= viewDate && (!row.ngay_dong || row.ngay_dong > viewDate));
+          tr.className = isActiveToday ? 'bg-sky-950/30 hover:bg-sky-900/40' : 'hover:bg-slate-800/40 text-slate-400';
+
+          let sttBadge = '<span class="px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-700">0 Mở</span>';
+          if (row.trang_thai === 1) sttBadge = '<span class="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700">1 Đã BD</span>';
+          if (row.trang_thai === 2) sttBadge = '<span class="px-2 py-0.5 rounded bg-teal-950/80 text-teal-300 border border-teal-700">2 Bao trùm</span>';
+          if (row.trang_thai === 9) sttBadge = '<span class="px-2 py-0.5 rounded bg-rose-950/80 text-rose-300 border border-rose-700">9 Hủy reset</span>';
+
+          tr.innerHTML = `
+            <td class="py-2 px-2 text-center text-slate-500 font-mono">${row.id}</td>
+            <td class="py-2 px-3 font-mono">
+              <span class="px-2 py-0.5 rounded border text-[11px] font-bold ${vInfo.badgeClass}">
+                ${row.is_khai_bao ? 'KHAI_BAO (' + row.ma_cap + ')' : vInfo.name}
+              </span>
+            </td>
+            <td class="py-2 px-3 text-right font-bold text-slate-200">${formatNumber(row.moc, 0)} h</td>
+            <td class="py-2 px-3 text-center">${formatVNDate(row.ngay_sinh)}</td>
+            <td class="py-2 px-3 text-center">${formatVNDate(row.ngay_den_han)}</td>
+            <td class="py-2 px-3 text-center">${formatVNDate(row.ngay_dong)}</td>
+            <td class="py-2 px-3 text-right font-bold text-amber-300">${formatNumber(row.gio_luc_bd)}</td>
+            <td class="py-2 px-3 text-center font-bold">${sttBadge}</td>
+            <td class="py-2 px-3 text-slate-300">${row.so_ct || '—'}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+      }
+    }
+
+    function loadScenario(code) {
+      promptedRowsSet.clear();
+      if (code === 'ZERO') {
+        currentParams = JSON.parse(JSON.stringify(ZERO_PARAMS));
+      } else if (code === 'TC1') {
+        currentParams = JSON.parse(JSON.stringify(TC1_PARAMS));
+      } else if (code === 'TC2') {
+        currentParams = JSON.parse(JSON.stringify(TC1_PARAMS));
+        currentParams.tham_so.cach_tinh_moc = 2;
+      } else if (code === 'TC3') {
+        currentParams = JSON.parse(JSON.stringify(TC1_PARAMS));
+        currentParams.phieu = [
+          { so_ct: 'TH002', loai: 'BD', ma_cap: '1200', ngay_ct: '2026-12-08', ngay_ra: '2026-12-09' }
+        ];
+      } else if (code === 'TC4') {
+        currentParams = JSON.parse(JSON.stringify(TC1_PARAMS));
+        currentParams.phieu = [
+          { so_ct: 'TH003', loai: 'BD', ma_cap: '900', ngay_ct: '2026-11-02', ngay_ra: '2026-11-03' }
+        ];
+      } else if (code === 'TC5') {
+        currentParams = JSON.parse(JSON.stringify(TC1_PARAMS));
+        currentParams.phieu = [
+          { so_ct: 'TH004', loai: 'BD', ma_cap: '300', ngay_ct: '2026-11-04', ngay_ra: '2026-11-05' }
+        ];
+      } else if (code === 'TC6') {
+        currentParams = JSON.parse(JSON.stringify(TC1_PARAMS));
+        currentParams.phieu = [];
+        currentParams.demo.den_ngay = '2026-11-15';
+      }
+      recalculateAll();
+      showToast('⚡', `Đã nạp kịch bản: ${code === 'ZERO' ? 'Chạy mới từ 0h' : code}`, 'bg-sky-900 text-sky-200 border-sky-500');
+    }
+
+    /**
+     * RESET HOÀN TOÀN VÀ PHÁT LẠI DEMO TỪ ĐẦU
+     */
+    function resetAndPlayFromStart() {
+      // 1. Đóng hộp thoại SOP nếu đang mở
+      document.getElementById('modal-interactive-ticket').classList.add('hidden');
+      
+      // 2. Xóa lịch sử hỏi duyệt bảo dưỡng để hệ thống hỏi lại khi đến hạn
+      promptedRowsSet.clear();
+      currentPendingPromptRow = null;
+
+      // 3. Nạp lại kịch bản sạch đang chọn trên dropdown
+      const currentScenarioCode = document.getElementById('scenario-selector').value || 'ZERO';
+      loadScenario(currentScenarioCode);
+
+      // 4. Đưa thời gian về Ngày đầu tiên (0h)
+      currentDayIndex = 0;
+      syncViewToCurrentDay();
+
+      // 5. Tự động bật chạy mô phỏng
+      setPlaying(true);
+
+      showToast('🔄', 'Đã đặt lại dữ liệu gốc & bắt đầu chạy lại demo từ đầu!', 'bg-indigo-900 text-indigo-200 border-indigo-500 badge-glow-green');
+    }
+
+    // ===================================================================
+    // GẮN SỰ KIỆN GIAO DIỆN & TƯƠNG TÁC WORKFLOW MODAL
+    // ===================================================================
+
+    function setupEventListeners() {
+      // Nút Reset và chạy lại từ đầu
+      document.getElementById('btn-restart-demo').addEventListener('click', resetAndPlayFromStart);
+
+      // Play / Pause / Rewind
+      document.getElementById('btn-play-pause').addEventListener('click', () => setPlaying(!isPlaying));
+      document.getElementById('btn-rewind').addEventListener('click', () => {
+        currentDayIndex = 0;
+        promptedRowsSet.clear();
+        syncViewToCurrentDay();
+        showToast('⏮️', 'Đã tua về ngày đầu tiên (31/10/2026)', 'bg-slate-800 text-slate-200 border-slate-700');
+      });
+      document.getElementById('btn-step-prev').addEventListener('click', () => {
+        currentDayIndex = Math.max(0, currentDayIndex - 1);
+        syncViewToCurrentDay();
+      });
+      document.getElementById('btn-step-next').addEventListener('click', () => {
+        currentDayIndex = Math.min(simDates.length - 1, currentDayIndex + 1);
+        syncViewToCurrentDay();
+      });
+
+      document.querySelectorAll('.speed-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('bg-sky-600', 'text-white'));
+          btn.classList.add('bg-sky-600', 'text-white');
+          playSpeed = parseFloat(btn.dataset.speed);
+        });
+      });
+
+      const slider = document.getElementById('timeline-slider');
+      slider.addEventListener('input', (e) => {
+        currentDayIndex = parseInt(e.target.value, 10);
+        syncViewToCurrentDay();
+      });
+
+      document.getElementById('scenario-selector').addEventListener('change', (e) => {
+        loadScenario(e.target.value);
+      });
+
+      // Quick action: Thêm SC lớn
+      document.getElementById('btn-quick-add-sc').addEventListener('click', () => {
+        const viewDate = simDates[currentDayIndex];
+        const ctNum = `SC0${Math.floor(Math.random() * 800 + 100)}`;
+        currentParams.phieu.push({
+          so_ct: ctNum,
+          loai: 'SC',
+          ma_cap: 'BIG',
+          ngay_ct: viewDate,
+          ngay_ra: addDays(viewDate, 3)
+        });
+        recalculateAll();
+        showToast('🏭', `Đã thêm sửa chữa lớn ${ctNum} ngày ${formatVNDate(viewDate)}`, 'bg-rose-900 text-rose-200 border-rose-500');
+      });
+
+      // Camera view shortcuts
+      document.getElementById('btn-reset-view').addEventListener('click', () => {
+        cameraTarget.set(0, 3, 0);
+        targetSpherical = { radius: 24, theta: Math.PI / 4, phi: Math.PI / 3 };
+      });
+      document.getElementById('cam-view-iso').addEventListener('click', () => {
+        cameraTarget.set(0, 3, 0);
+        targetSpherical = { radius: 24, theta: Math.PI / 4, phi: Math.PI / 3 };
+      });
+      document.getElementById('cam-view-cabin').addEventListener('click', () => {
+        cameraTarget.set(0, 3.5, 0);
+        targetSpherical = { radius: 11, theta: Math.PI / 5, phi: Math.PI / 2.6 };
+      });
+      document.getElementById('cam-view-ring').addEventListener('click', () => {
+        cameraTarget.set(0, 1.5, 0);
+        targetSpherical = { radius: 26, theta: 0, phi: 0.2 };
+      });
+
+      // Tab navigation
+      document.querySelectorAll('.panel-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.panel-tab-btn').forEach(b => {
+            b.classList.remove('bg-sky-600', 'bg-indigo-600', 'text-white');
+            b.classList.add('text-slate-400');
+          });
+          btn.classList.add('bg-sky-600', 'text-white');
+          btn.classList.remove('text-slate-400');
+
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+          const target = btn.dataset.target;
+          const targetEl = document.getElementById(target);
+          if (targetEl) targetEl.classList.remove('hidden');
+        });
+      });
+
+      // Quick shortcut xem Sơ đồ Quy tắc
+      const btnShowDiagram = document.getElementById('btn-quick-show-diagram');
+      if (btnShowDiagram) {
+        btnShowDiagram.addEventListener('click', () => {
+          const tabBtn = document.querySelector('[data-target="tab-rules-diagram"]');
+          if (tabBtn) tabBtn.click();
+        });
+      }
+
+      // Form Slider change
+      document.getElementById('form-gio-slider').addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        document.getElementById('form-gio-display').textContent = `${val.toFixed(1)} h/ngày (${Math.round(val * 60)} ph)`;
+      });
+
+      // Nút Áp dụng Form Tham số Trực quan
+      document.getElementById('btn-form-apply').addEventListener('click', () => {
+        readParamsFromForm();
+        promptedRowsSet.clear();
+        recalculateAll();
+        showToast('✅', 'Đã cập nhật tham số từ biểu mẫu trực quan!', 'bg-emerald-900 text-emerald-200 border-emerald-500');
+      });
+
+      // Nút Khôi phục mặc định Form
+      document.getElementById('btn-form-restore-default').addEventListener('click', () => {
+        currentParams = JSON.parse(JSON.stringify(DEFAULT_PARAMS));
+        promptedRowsSet.clear();
+        recalculateAll();
+        showToast('🔄', 'Đã khôi phục tham số mặc định ban đầu', 'bg-slate-800 text-slate-200 border-slate-600');
+      });
+
+      // Nút chủ động mở modal lập phiếu tại ngày hiện tại
+      document.getElementById('btn-open-interactive-ticket').addEventListener('click', () => {
+        const viewDate = simDates[currentDayIndex];
+        const report = baoCao(currentParams, engineCache, viewDate);
+        const targetRow = report.rowsToShow[0] || { ma_cap: '900', moc: 900, con_lai: 0, id: 999 };
+        currentPendingPromptRow = targetRow;
+
+        document.getElementById('modal-tb-info').textContent = `${currentParams.thiet_bi?.ma_tb} - ${currentParams.thiet_bi?.ten_tb}`;
+        document.getElementById('modal-cap-info').textContent = `Cấp ${targetRow.ma_cap}h (Mốc: ${targetRow.moc} h)`;
+        document.getElementById('modal-date-info').textContent = formatVNDate(viewDate);
+        document.getElementById('modal-hours-info').textContent = `${formatNumber(report.H_X)} h`;
+        document.getElementById('modal-input-ngay-ra').value = addDays(viewDate, 2);
+        document.getElementById('modal-interactive-ticket').classList.remove('hidden');
+      });
+
+      // SỰ KIỆN NÚT TRÊN MODAL INTERACTIVE
+      document.getElementById('btn-modal-close').addEventListener('click', () => {
+        document.getElementById('modal-interactive-ticket').classList.add('hidden');
+      });
+
+      // Người dùng chọn: Chưa làm (chạy tiếp xem quá hạn)
+      document.getElementById('btn-modal-ignore').addEventListener('click', () => {
+        document.getElementById('modal-interactive-ticket').classList.add('hidden');
+        showToast('⏳', 'Bỏ qua bảo dưỡng cấp này, tiếp tục vận hành thiết bị...', 'bg-amber-900 text-amber-200 border-amber-600');
+        setPlaying(true); // Tiếp tục chạy
+      });
+
+      // Người dùng chọn: DUYỆT & HOÀN THÀNH PHIẾU BẢO DƯỠNG
+      document.getElementById('btn-modal-confirm').addEventListener('click', () => {
+        const viewDate = simDates[currentDayIndex];
+        const soCt = document.getElementById('modal-input-so-ct').value.trim() || 'TH001/BB-XNSCCK';
+        const ngayRa = document.getElementById('modal-input-ngay-ra').value || viewDate;
+        const targetCap = currentPendingPromptRow ? String(currentPendingPromptRow.ma_cap) : '900';
+
+        // Thêm phiếu bảo dưỡng vào danh sách
+        currentParams.phieu.push({
+          so_ct: soCt,
+          loai: 'BD',
+          ma_cap: targetCap,
+          ngay_ct: viewDate,
+          ngay_ra: ngayRa
+        });
+
+        // Ẩn modal
+        document.getElementById('modal-interactive-ticket').classList.add('hidden');
+
+        // Engine tính toán lại ngay lập tức
+        recalculateAll();
+
+        showToast('🔧', `Đã duyệt Phiếu ${soCt} cấp ${targetCap}! Nghiệm thu ngày ${formatVNDate(ngayRa)}`, 'bg-emerald-900 text-emerald-200 border-emerald-500');
+
+        // Tự động chạy tiếp mô phỏng sau khi cập nhật
+        setTimeout(() => {
+          setPlaying(true);
+        }, 500);
+      });
+
+      document.getElementById('btn-clear-logs').addEventListener('click', () => {
+        engineCache.logs = [];
+        renderLogs([], simDates[currentDayIndex]);
+      });
+
+      document.getElementById('btn-toggle-tests').addEventListener('click', () => {
+        document.querySelector('[data-target="tab-tests"]').click();
+      });
+    }
+
+    function renderTestResultsUI(testResults) {
+      const tbody = document.getElementById('tbody-test-results');
+      tbody.innerHTML = '';
+      const passCount = testResults.filter(t => t.pass).length;
+      const totalCount = testResults.length;
+
+      const badge = document.getElementById('test-summary-badge');
+      const badgeFull = document.getElementById('test-badge-full');
+
+      if (passCount === totalCount) {
+        badge.textContent = `KIỂM THỬ: ${passCount}/${totalCount} PASS`;
+        badgeFull.textContent = `${passCount}/${totalCount} TEST PASS (100%)`;
+        badgeFull.className = 'px-3 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-600 text-xs font-bold font-mono';
+      } else {
+        badge.textContent = `KIỂM THỬ: ${passCount}/${totalCount} (CÓ LỖI)`;
+        badgeFull.textContent = `${passCount}/${totalCount} TEST PASS`;
+        badgeFull.className = 'px-3 py-1 rounded-full bg-rose-950 text-rose-300 border border-rose-600 text-xs font-bold font-mono';
+      }
+
+      for (const t of testResults) {
+        const tr = document.createElement('tr');
+        tr.className = t.pass ? 'hover:bg-slate-800/40' : 'bg-rose-950/30 hover:bg-rose-900/40';
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-bold text-sky-400">${t.case}</td>
+          <td class="py-2.5 px-3 text-slate-200">${t.name}</td>
+          <td class="py-2.5 px-3 text-slate-400">${t.expected}</td>
+          <td class="py-2.5 px-3 text-slate-300">${t.actual}</td>
+          <td class="py-2.5 px-3 text-center">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.pass ? 'bg-emerald-950 text-emerald-300 border border-emerald-700' : 'bg-rose-950 text-rose-300 border border-rose-700'}">
+              ${t.pass ? 'PASS' : 'FAIL'}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    // ===================================================================
+    // KHỞI ĐỘNG HỆ THỐNG TRÊN WINDOW LOAD
+    // ===================================================================
+
+    window.onload = function() {
+      const testResults = chayKiemThuBatBuoc();
+      renderTestResultsUI(testResults);
+
+      init3DScene();
+      recalculateAll();
+      setupEventListeners();
+
+      requestAnimationFrame(animate);
+
+      if (currentParams.demo?.tu_chay) {
+        setPlaying(true);
+      }
+    };
+  </script>
 </body>
 </html>
